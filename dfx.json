@@ -1,0 +1,38 @@
+{
+  "canisters": {
+    "backend": {
+      "type": "rust",
+      "package": "backend",
+      "candid": "src/distributed/backend/backend.did",
+      "declarations": {
+        "output": "src/declarations/backend"
+      },
+      "frontend": {},
+      "metadata": [
+        {
+          "name": "candid:service"
+        }
+      ]
+    },
+    "frontend": {
+      "dependencies": ["backend"],
+      "frontend": {
+        "entrypoint": "build/index.html"
+      },
+      "source": ["build/"],
+      "type": "assets"
+    },
+    "internet-identity": {
+      "type": "pull",
+      "id": "rdmx6-jaaaa-aaaaa-aaadq-cai",
+      "frontend": {}
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "localhost:8080",
+      "type": "ephemeral"
+    }
+  },
+  "output_env_file": ".env"
+}
