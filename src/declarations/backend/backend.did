@@ -1,13 +1,35 @@
+type AddProductPayload = record {
+  name : text;
+  unit : text;
+  description : text;
+  price : float64;
+};
 type GetUserDataError = variant {
   FailedToAddToList;
   DidntFindUserData;
   AnonymousCaller;
 };
-type Result = variant { Ok : text; Err : GetUserDataError };
-type Result_1 = variant { Ok; Err : GetUserDataError };
+type Product = record {
+  id : nat64;
+  name : text;
+  unit : text;
+  description : text;
+  price : float64;
+};
+type Result = variant { Ok : nat64; Err : text };
+type Result_1 = variant { Ok; Err : text };
+type Result_2 = variant { Ok : UserProfile; Err : text };
+type Result_3 = variant { Ok : UserProfile; Err : GetUserDataError };
+type Result_4 = variant { Ok : text; Err : text };
+type Result_5 = variant { Ok; Err : GetUserDataError };
+type UserProfile = record { name : text; address : text; phone_number : text };
 service : {
-  add_to_list : (principal) -> ();
-  get_principal_data : () -> (Result) query;
-  set_principal_data : (text) -> (Result_1);
-  test_func : () -> (text);
+  add_product_admin : (AddProductPayload) -> (Result);
+  create_profile : (UserProfile) -> (Result_1);
+  delete_profile_admin : (text) -> (Result_2);
+  get_products : () -> (vec Product) query;
+  get_profile_by_phone : (text) -> (Result_3) query;
+  initialize_products : () -> (Result_4);
+  is_dev_check : () -> (bool) query;
+  update_profile : (UserProfile) -> (Result_5);
 }

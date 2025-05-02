@@ -15,17 +15,16 @@
       ]
     },
     "frontend": {
-      "dependencies": ["backend"],
+      "dependencies": [
+        "backend"
+      ],
       "frontend": {
         "entrypoint": "build/index.html"
       },
-      "source": ["build/"],
+      "source": [
+        "build/"
+      ],
       "type": "assets"
-    },
-    "internet-identity": {
-      "type": "pull",
-      "id": "rdmx6-jaaaa-aaaaa-aaadq-cai",
-      "frontend": {}
     }
   },
   "networks": {
