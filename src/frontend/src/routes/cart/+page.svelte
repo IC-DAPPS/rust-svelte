@@ -1,13 +1,38 @@
 <script lang="ts">
   import { cartStore, cartTotal, type CartItem } from "$lib/stores/cart";
-  import { createOrder } from "$lib/api";
+  import { createOrder, createProfile, getProfileByPhone } from "$lib/api";
   import { goto } from "$app/navigation";
+  import type { UserProfile } from "$lib/types";
 
   let phoneNumber = "";
   let address = "";
   let submitting = false;
   let errorMessage = "";
   let cartItems: CartItem[] = [];
+
+  // Load saved phone number from localStorage if available
+  $: {
+    const savedPhone = localStorage.getItem("userPhoneNumber");
+    if (savedPhone && phoneNumber === "") {
+      phoneNumber = savedPhone;
+    }
+  }
+
+  // Try to load saved address if available
+  $: if (phoneNumber && phoneNumber.trim() !== "" && address === "") {
+    loadSavedAddress();
+  }
+
+  async function loadSavedAddress() {
+    try {
+      const userProfile = await getProfileByPhone(phoneNumber);
+      if (userProfile) {
+        address = userProfile.address;
+      }
+    } catch (error) {
+      console.error("Error loading user profile:", error);
+    }
+  }
 
   // Subscribe to cart store changes
   cartStore.subscribe((items) => {
@@ -50,6 +75,29 @@
     errorMessage = "";
 
     try {
+      // Save phone number for future use
+      localStorage.setItem("userPhoneNumber", phoneNumber);
+
+      // First, check if user profile exists
+      const userProfile = await getProfileByPhone(phoneNumber);
+
+      // If profile doesn't exist, create one
+      if (!userProfile) {
+        const newProfile: UserProfile = {
+          phone_number: phoneNumber,
+          name: "Customer", // Default name, user can update later
+          address: address,
+        };
+
+        const profileCreated = await createProfile(newProfile);
+        if (!profileCreated) {
+          errorMessage =
+            "Profile create karne mein problem hui. Kripya dobara koshish karein.";
+          submitting = false;
+          return;
+        }
+      }
+
       // Convert cart items to OrderItemInput format
       const orderItems = cartItems.map((item) => ({
         product_id: item.product.id,
@@ -63,7 +111,8 @@
         cartStore.clearCart();
         goto(`/orders/${orderId}`);
       } else {
-        errorMessage = "Order create karne mein problem hui. Kripya dobara koshish karein.";
+        errorMessage =
+          "Order create karne mein problem hui. Kripya dobara koshish karein.";
       }
     } catch (error) {
       console.error("Error creating order:", error);

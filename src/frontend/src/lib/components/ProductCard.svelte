@@ -77,8 +77,15 @@
     quantity = value;
   }
 
-  function handleAddToCart() {
+  // Add button click feedback state
+  let isAddingToCart = false;
+  function handleAddToCartWithFeedback() {
+    isAddingToCart = true;
     onAddToCart();
+    // Reset after animation completes
+    setTimeout(() => {
+      isAddingToCart = false;
+    }, 500);
   }
 
   function handleImageError() {
@@ -129,7 +136,11 @@
           {/each}
         </div>
       </div>
-      <button class="add-to-cart" on:click={handleAddToCart}>
+      <button
+        class="add-to-cart"
+        on:click={handleAddToCartWithFeedback}
+        class:clicked={isAddingToCart}
+      >
         Add to Cart
       </button>
     </div>
@@ -297,11 +308,42 @@
     padding: 0.5rem 1rem;
     font-weight: bold;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.2s;
     width: 100%;
+    position: relative;
+    overflow: hidden;
   }
 
   .add-to-cart:hover {
     background-color: #4e9a5f;
+  }
+
+  .add-to-cart.clicked {
+    background-color: #3a7a4a;
+    transform: scale(0.98);
+  }
+
+  .add-to-cart.clicked::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    animation: ripple 0.5s ease-out;
+  }
+
+  @keyframes ripple {
+    0% {
+      transform: translate(-50%, -50%) scale(0);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(2.5);
+      opacity: 0;
+    }
   }
 </style>
