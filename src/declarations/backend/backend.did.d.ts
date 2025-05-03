@@ -11,6 +11,34 @@ export interface AddProductPayload {
 export type GetUserDataError = { 'FailedToAddToList' : null } |
   { 'DidntFindUserData' : null } |
   { 'AnonymousCaller' : null };
+export interface Order {
+  'id' : bigint,
+  'status' : OrderStatus,
+  'total_amount' : number,
+  'last_updated' : bigint,
+  'user_phone_number' : string,
+  'delivery_address' : string,
+  'timestamp' : bigint,
+  'items' : Array<OrderItem>,
+}
+export type OrderError = { 'AccessDenied' : null } |
+  { 'InvalidInput' : string } |
+  { 'InvalidProductInOrder' : bigint } |
+  { 'OrderNotFound' : null } |
+  { 'UserProfileNotFound' : null } |
+  { 'StorageError' : string };
+export interface OrderItem {
+  'product_id' : bigint,
+  'quantity' : number,
+  'price_per_unit_at_order' : number,
+}
+export interface OrderItemInput { 'product_id' : bigint, 'quantity' : number }
+export type OrderStatus = { 'Delivered' : null } |
+  { 'Confirmed' : null } |
+  { 'Cancelled' : null } |
+  { 'Processing' : null } |
+  { 'OutForDelivery' : null } |
+  { 'Pending' : null };
 export interface Product {
   'id' : bigint,
   'name' : string,
@@ -20,15 +48,21 @@ export interface Product {
 }
 export type Result = { 'Ok' : bigint } |
   { 'Err' : string };
-export type Result_1 = { 'Ok' : null } |
-  { 'Err' : string };
-export type Result_2 = { 'Ok' : UserProfile } |
+export type Result_1 = { 'Ok' : bigint } |
+  { 'Err' : OrderError };
+export type Result_2 = { 'Ok' : null } |
   { 'Err' : string };
 export type Result_3 = { 'Ok' : UserProfile } |
-  { 'Err' : GetUserDataError };
-export type Result_4 = { 'Ok' : string } |
   { 'Err' : string };
-export type Result_5 = { 'Ok' : null } |
+export type Result_4 = { 'Ok' : Array<Order> } |
+  { 'Err' : OrderError };
+export type Result_5 = { 'Ok' : Order } |
+  { 'Err' : OrderError };
+export type Result_6 = { 'Ok' : UserProfile } |
+  { 'Err' : GetUserDataError };
+export type Result_7 = { 'Ok' : string } |
+  { 'Err' : string };
+export type Result_8 = { 'Ok' : null } |
   { 'Err' : GetUserDataError };
 export interface UserProfile {
   'name' : string,
@@ -37,13 +71,20 @@ export interface UserProfile {
 }
 export interface _SERVICE {
   'add_product_admin' : ActorMethod<[AddProductPayload], Result>,
-  'create_profile' : ActorMethod<[UserProfile], Result_1>,
-  'delete_profile_admin' : ActorMethod<[string], Result_2>,
+  'create_order' : ActorMethod<
+    [string, Array<OrderItemInput>, string],
+    Result_1
+  >,
+  'create_profile' : ActorMethod<[UserProfile], Result_2>,
+  'delete_profile_admin' : ActorMethod<[string], Result_3>,
+  'get_my_orders' : ActorMethod<[string], Result_4>,
+  'get_order_details' : ActorMethod<[bigint, string], Result_5>,
   'get_products' : ActorMethod<[], Array<Product>>,
-  'get_profile_by_phone' : ActorMethod<[string], Result_3>,
-  'initialize_products' : ActorMethod<[], Result_4>,
+  'get_profile_by_phone' : ActorMethod<[string], Result_6>,
+  'initialize_products' : ActorMethod<[], Result_7>,
   'is_dev_check' : ActorMethod<[], boolean>,
-  'update_profile' : ActorMethod<[UserProfile], Result_5>,
+  'update_order_status_admin' : ActorMethod<[bigint, OrderStatus], Result_5>,
+  'update_profile' : ActorMethod<[UserProfile], Result_8>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];
