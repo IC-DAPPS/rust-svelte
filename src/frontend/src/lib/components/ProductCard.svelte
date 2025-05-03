@@ -1,13 +1,30 @@
 <script lang="ts">
   import type { Product } from "$lib/types";
   import { onMount } from "svelte";
+  import { cartStore } from "$lib/stores/cart";
 
   export let product: Product;
-  export let onAddToCart: () => void;
+  export let onAddToCart: (quantity: number) => void;
 
   let quantity = 1;
   let imgSrc = "/images/products/dairy-default.jpg"; // Default image
   const fractionOptions = [0.25, 0.5, 0.75, 1];
+
+  // Track if this product is in cart
+  let isInCart = false;
+
+  // Check if product is already in cart
+  function checkIfInCart() {
+    const savedCart = localStorage.getItem("dairyCart");
+    if (savedCart) {
+      try {
+        const cart = JSON.parse(savedCart);
+        isInCart = cart.some((item) => item.product.id === product.id);
+      } catch (e) {
+        console.error("Failed to parse saved cart", e);
+      }
+    }
+  }
 
   // Function to get the appropriate image based on product name
   function getProductImage(productName: string): string {
@@ -40,6 +57,16 @@
 
   onMount(() => {
     imgSrc = getProductImage(product.name);
+    checkIfInCart();
+
+    // Subscribe to cart changes
+    const unsubscribe = cartStore.subscribe((items) => {
+      isInCart = items.some((item) => item.product.id === product.id);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   });
 
   function incrementQuantity() {
@@ -81,7 +108,9 @@
   let isAddingToCart = false;
   function handleAddToCartWithFeedback() {
     isAddingToCart = true;
-    onAddToCart();
+    onAddToCart(quantity);
+    isInCart = true; // Set as in cart immediately
+
     // Reset after animation completes
     setTimeout(() => {
       isAddingToCart = false;
@@ -91,6 +120,9 @@
   function handleImageError() {
     imgSrc = "/images/products/dairy-default.jpg";
   }
+
+  // Get the correct unit for display (fix for Ghee)
+  $: displayUnit = product.name === "Ghee" ? "kg" : product.unit;
 </script>
 
 <div class="product-card">
@@ -104,7 +136,7 @@
     <h3 class="product-name">{product.name}</h3>
     <p class="product-description">{product.description}</p>
     <div class="product-meta">
-      <span class="product-price">₹{product.price}/{product.unit}</span>
+      <span class="product-price">₹{product.price}/{displayUnit}</span>
     </div>
     <div class="product-actions">
       <div class="quantity-section">
@@ -140,8 +172,9 @@
         class="add-to-cart"
         on:click={handleAddToCartWithFeedback}
         class:clicked={isAddingToCart}
+        class:in-cart={isInCart}
       >
-        Add to Cart
+        {isInCart ? "Added to Cart" : "Add to Cart"}
       </button>
     </div>
   </div>
@@ -321,6 +354,11 @@
   .add-to-cart.clicked {
     background-color: #3a7a4a;
     transform: scale(0.98);
+  }
+
+  .add-to-cart.in-cart {
+    background-color: #2c5c3a;
+    border: 2px solid #4e9a5f;
   }
 
   .add-to-cart.clicked::after {

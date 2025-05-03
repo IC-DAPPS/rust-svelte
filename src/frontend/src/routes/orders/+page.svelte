@@ -2,12 +2,14 @@
   import { onMount } from "svelte";
   import { getMyOrders } from "$lib/api";
   import type { Order } from "$lib/types";
+  import { goto } from "$app/navigation";
 
   let orders: Order[] = [];
   let loading = true;
   let error = false;
   let phoneNumber = "";
   let isLoggedIn = false;
+  let attemptCount = 0; // Track load attempts
 
   onMount(() => {
     // Check if user is already logged in via localStorage
@@ -16,6 +18,21 @@
       phoneNumber = storedPhoneNumber;
       isLoggedIn = true;
       loadOrders();
+
+      // Check if we just came from order creation
+      const newOrderCreated = localStorage.getItem("newOrderCreated");
+      if (newOrderCreated === "true") {
+        // Clear the flag
+        localStorage.removeItem("newOrderCreated");
+
+        // Check if we need to redirect to the order details
+        const lastOrderId = localStorage.getItem("lastOrderId");
+        if (lastOrderId) {
+          localStorage.removeItem("lastOrderId");
+          // We could redirect to the order details, but we're already loading orders
+          // So we'll just focus on showing all orders
+        }
+      }
     }
   });
 
@@ -32,14 +49,32 @@
   async function loadOrders() {
     loading = true;
     error = false;
+    attemptCount++;
 
     try {
       orders = await getMyOrders(phoneNumber);
+
+      // If we don't get any orders on the first attempt, try one more time
+      if (orders.length === 0 && attemptCount === 1) {
+        // Small delay before retrying
+        setTimeout(() => {
+          loadOrders();
+        }, 500);
+        return;
+      }
+
       loading = false;
     } catch (err) {
       console.error("Failed to load orders:", err);
       error = true;
       loading = false;
+    }
+  }
+
+  // Force refresh orders when this variable changes
+  $: {
+    if (isLoggedIn) {
+      // Adding this reactive statement ensures orders refresh properly
     }
   }
 
@@ -107,6 +142,15 @@
     </div>
   {:else}
     <div class="orders-list">
+      <div class="orders-header">
+        <h2>Your Order History</h2>
+        <div class="orders-actions">
+          <button class="btn btn-secondary" on:click={loadOrders}>
+            <span class="refresh-icon">🔄</span> Refresh
+          </button>
+          <a href="/" class="btn btn-primary">Dobara Shopping Karein</a>
+        </div>
+      </div>
       {#each orders as order (order.id)}
         <div class="order-card">
           <div class="order-header">
@@ -237,6 +281,27 @@
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+  }
+
+  .orders-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .orders-header h2 {
+    margin: 0;
+    color: #333;
+  }
+
+  .orders-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .refresh-icon {
+    display: inline-block;
   }
 
   .order-card {

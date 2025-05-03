@@ -10,9 +10,22 @@
   let phoneNumber = "";
   let isLoggedIn = false;
 
+  onMount(() => {
+    // Auto-load phone number from localStorage
+    const storedPhoneNumber = localStorage.getItem("userPhoneNumber");
+    if (storedPhoneNumber) {
+      phoneNumber = storedPhoneNumber;
+      isLoggedIn = true;
+      // Auto-load order details with stored phone number
+      loadOrderDetails();
+    }
+  });
+
   // Handle login with phone number
   function handleLogin() {
     if (phoneNumber.trim().length > 0) {
+      // Save phone for future use
+      localStorage.setItem("userPhoneNumber", phoneNumber);
       isLoggedIn = true;
       loadOrderDetails();
     }
@@ -244,6 +257,7 @@
 
       <div class="order-actions">
         <a href="/orders" class="btn btn-outline">Back to Orders</a>
+        <a href="/" class="btn btn-primary">Dobara Shopping Karein</a>
         {#if "Pending" in order.status}
           <button class="btn btn-secondary">Cancel Order</button>
         {/if}

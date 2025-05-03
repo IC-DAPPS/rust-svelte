@@ -90,7 +90,7 @@ export const cartStore = createCartStore();
 // Derived stores for cart calculations
 export const cartItemCount = derived(
     cartStore,
-    $cart => $cart.reduce((total, item) => total + item.quantity, 0)
+    $cart => $cart.length
 );
 
 export const cartTotal = derived(

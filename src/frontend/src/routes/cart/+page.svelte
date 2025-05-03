@@ -109,6 +109,9 @@
       if (orderId !== null) {
         // Clear cart and redirect to order confirmation
         cartStore.clearCart();
+        // Set a flag to indicate a new order was created
+        localStorage.setItem("newOrderCreated", "true");
+        localStorage.setItem("lastOrderId", String(orderId));
         goto(`/orders/${orderId}`);
       } else {
         errorMessage =
@@ -144,7 +147,9 @@
             <div class="item-info">
               <h3>{item.product.name}</h3>
               <p class="item-price">
-                ₹{item.product.price}/{item.product.unit}
+                ₹{item.product.price}/{item.product.name === "Ghee"
+                  ? "kg"
+                  : item.product.unit}
               </p>
             </div>
 

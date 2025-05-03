@@ -20,8 +20,8 @@
     }
   });
 
-  function addToCart(product: Product) {
-    cartStore.addItem(product, 1);
+  function addToCart(product: Product, quantity: number) {
+    cartStore.addItem(product, quantity);
   }
 </script>
 
@@ -58,7 +58,10 @@
     {:else}
       <div class="product-grid">
         {#each products as product (product.id)}
-          <ProductCard {product} onAddToCart={() => addToCart(product)} />
+          <ProductCard
+            {product}
+            onAddToCart={(quantity) => addToCart(product, quantity)}
+          />
         {/each}
       </div>
     {/if}
