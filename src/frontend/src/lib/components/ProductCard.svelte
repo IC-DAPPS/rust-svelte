@@ -1,31 +1,96 @@
 <script lang="ts">
   import type { Product } from "$lib/types";
+  import { onMount } from "svelte";
 
   export let product: Product;
   export let onAddToCart: () => void;
 
   let quantity = 1;
+  let imgSrc = "/images/products/dairy-default.jpg"; // Default image
+  const fractionOptions = [0.25, 0.5, 0.75, 1];
+
+  // Function to get the appropriate image based on product name
+  function getProductImage(productName: string): string {
+    const name = productName.toLowerCase();
+
+    if (name.includes("milk")) {
+      return "/images/products/milk.jpg";
+    } else if (name.includes("paneer")) {
+      return "/images/products/paneer.jpg";
+    } else if (
+      name.includes("methi dahi") ||
+      name.includes("curd with fenugreek")
+    ) {
+      return "/images/products/methi-dahi.jpg";
+    } else if (name.includes("khatti dahi") || name.includes("sour curd")) {
+      return "/images/products/khatti-dahi.jpg";
+    } else if (name.includes("matha") || name.includes("buttermilk")) {
+      return "/images/products/buttermilk.jpg";
+    } else if (name.includes("ghee")) {
+      return "/images/products/ghee.jpg";
+    } else if (name.includes("cream")) {
+      return "/images/products/cream.jpg";
+    } else if (name.includes("butter")) {
+      return "/images/products/butter.jpg";
+    } else {
+      // Default image for other products
+      return "/images/products/dairy-default.jpg";
+    }
+  }
+
+  onMount(() => {
+    imgSrc = getProductImage(product.name);
+  });
 
   function incrementQuantity() {
-    quantity += 1;
+    if (quantity < 1) {
+      // If below 1, increment by 0.25
+      quantity = Math.round((quantity + 0.25) * 100) / 100;
+    } else {
+      // If 1 or above, increment by 1
+      quantity += 1;
+    }
   }
 
   function decrementQuantity() {
     if (quantity > 1) {
+      // If above 1, decrement by 1
       quantity -= 1;
+    } else if (quantity > 0.25) {
+      // If between 0.25 and 1, decrement by 0.25
+      quantity = Math.round((quantity - 0.25) * 100) / 100;
     }
+  }
+
+  function handleQuantityInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const value = parseFloat(input.value);
+
+    if (!isNaN(value) && value >= 0.25) {
+      quantity = value;
+    } else if (!isNaN(value) && value < 0.25) {
+      quantity = 0.25;
+    }
+  }
+
+  function setFraction(value: number) {
+    quantity = value;
   }
 
   function handleAddToCart() {
     onAddToCart();
+  }
+
+  function handleImageError() {
+    imgSrc = "/images/products/dairy-default.jpg";
   }
 </script>
 
 <div class="product-card">
   <div class="product-image-container">
     <div class="product-image">
-      <!-- Will add actual images later -->
-      <div class="placeholder-image">{product.name[0]}</div>
+      <!-- Use actual product images -->
+      <img src={imgSrc} alt={product.name} on:error={handleImageError} />
     </div>
   </div>
   <div class="product-info">
@@ -35,14 +100,34 @@
       <span class="product-price">₹{product.price}/{product.unit}</span>
     </div>
     <div class="product-actions">
-      <div class="quantity-control">
-        <button on:click={decrementQuantity} aria-label="Decrease quantity"
-          >-</button
-        >
-        <span class="quantity">{quantity}</span>
-        <button on:click={incrementQuantity} aria-label="Increase quantity"
-          >+</button
-        >
+      <div class="quantity-section">
+        <div class="quantity-control">
+          <button on:click={decrementQuantity} aria-label="Decrease quantity"
+            >-</button
+          >
+          <input
+            type="number"
+            bind:value={quantity}
+            min="0.25"
+            step="0.25"
+            on:input={handleQuantityInput}
+            class="quantity-input"
+          />
+          <button on:click={incrementQuantity} aria-label="Increase quantity"
+            >+</button
+          >
+        </div>
+        <div class="fraction-options">
+          {#each fractionOptions as fraction}
+            <button
+              class="fraction-btn"
+              class:active={quantity === fraction}
+              on:click={() => setFraction(fraction)}
+            >
+              {fraction}
+            </button>
+          {/each}
+        </div>
       </div>
       <button class="add-to-cart" on:click={handleAddToCart}>
         Add to Cart
@@ -84,17 +169,15 @@
     justify-content: center;
   }
 
-  .placeholder-image {
-    width: 80px;
-    height: 80px;
-    background-color: #a3d2ca;
-    color: white;
-    font-size: 2rem;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
+  .product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+
+  .product-image img:hover {
+    transform: scale(1.05);
   }
 
   .product-info {
@@ -132,8 +215,14 @@
 
   .product-actions {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .quantity-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   .quantity-control {
@@ -160,10 +249,44 @@
     background: #eee;
   }
 
-  .quantity {
-    padding: 0 10px;
-    min-width: 30px;
+  .quantity-input {
+    width: 60px;
+    border: none;
     text-align: center;
+    font-size: 1rem;
+    padding: 0.25rem;
+  }
+
+  .quantity-input::-webkit-inner-spin-button,
+  .quantity-input::-webkit-outer-spin-button {
+    opacity: 0;
+  }
+
+  .fraction-options {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.25rem;
+  }
+
+  .fraction-btn {
+    flex: 1;
+    background: #f8f8f8;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 0.2rem 0;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .fraction-btn:hover {
+    background-color: #eee;
+  }
+
+  .fraction-btn.active {
+    background-color: #5eaa6f;
+    color: white;
+    border-color: #5eaa6f;
   }
 
   .add-to-cart {
@@ -175,6 +298,7 @@
     font-weight: bold;
     cursor: pointer;
     transition: background-color 0.2s;
+    width: 100%;
   }
 
   .add-to-cart:hover {
