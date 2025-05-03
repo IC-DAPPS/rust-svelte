@@ -9,9 +9,21 @@
   let phoneNumber = "";
   let isLoggedIn = false;
 
+  onMount(() => {
+    // Check if user is already logged in via localStorage
+    const storedPhoneNumber = localStorage.getItem("userPhoneNumber");
+    if (storedPhoneNumber) {
+      phoneNumber = storedPhoneNumber;
+      isLoggedIn = true;
+      loadOrders();
+    }
+  });
+
   // Temporary function until we have a proper user management system
   function handleLogin() {
     if (phoneNumber.trim().length > 0) {
+      // Save phone number to localStorage for persistence
+      localStorage.setItem("userPhoneNumber", phoneNumber);
       isLoggedIn = true;
       loadOrders();
     }

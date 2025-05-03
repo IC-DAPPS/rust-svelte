@@ -1,8 +1,14 @@
 <script lang="ts">
   import { cartItemCount, cartTotal } from "$lib/stores/cart";
   import { page } from "$app/stores";
+  import { onMount } from "svelte";
+  import { getProfile } from "$lib/api";
+  import type { UserProfile } from "$lib/types";
 
   let mobileMenuOpen = false;
+  let isLoggedIn = false;
+  let userProfile: UserProfile | null = null;
+  let userFirstName = "";
 
   function toggleMobileMenu() {
     mobileMenuOpen = !mobileMenuOpen;
@@ -14,6 +20,24 @@
     isEnglish = !isEnglish;
     // In a real implementation, this would trigger language switching
   }
+
+  onMount(async () => {
+    // Check if user is logged in
+    const storedPhoneNumber = localStorage.getItem("userPhoneNumber");
+    isLoggedIn = !!storedPhoneNumber;
+
+    if (isLoggedIn && storedPhoneNumber) {
+      try {
+        userProfile = await getProfile(storedPhoneNumber);
+        if (userProfile && userProfile.name) {
+          // Get first name only
+          userFirstName = userProfile.name.split(" ")[0];
+        }
+      } catch (error) {
+        console.error("Failed to load user profile for navbar:", error);
+      }
+    }
+  });
 </script>
 
 <nav class="navbar">
@@ -41,16 +65,28 @@
           <li class:active={$page.url.pathname === "/"}>
             <a href="/">{isEnglish ? "Home" : "होम"}</a>
           </li>
-          <li class:active={$page.url.pathname === "/products"}>
+          <li
+            class:active={$page.url.pathname === "/products" ||
+              $page.url.pathname.startsWith("/products/")}
+          >
             <a href="/products">{isEnglish ? "Products" : "उत्पाद"}</a>
           </li>
-          <li class:active={$page.url.pathname === "/subscription"}>
+          <li
+            class:active={$page.url.pathname === "/subscription" ||
+              $page.url.pathname.startsWith("/subscription/")}
+          >
             <a href="/subscription">{isEnglish ? "Subscription" : "सदस्यता"}</a>
           </li>
-          <li class:active={$page.url.pathname === "/orders"}>
+          <li
+            class:active={$page.url.pathname === "/orders" ||
+              $page.url.pathname.startsWith("/orders/")}
+          >
             <a href="/orders">{isEnglish ? "My Orders" : "मेरे ऑर्डर"}</a>
           </li>
-          <li class:active={$page.url.pathname === "/about"}>
+          <li
+            class:active={$page.url.pathname === "/about" ||
+              $page.url.pathname.startsWith("/about/")}
+          >
             <a href="/about">{isEnglish ? "About Us" : "हमारे बारे में"}</a>
           </li>
         </ul>
@@ -70,6 +106,9 @@
 
           <a href="/profile" class="profile-link">
             <span class="profile-icon">👤</span>
+            {#if isLoggedIn && userFirstName}
+              <span class="user-name">{userFirstName}</span>
+            {/if}
           </a>
         </div>
       </div>
@@ -305,5 +344,11 @@
     .profile-link {
       margin: 0.5rem 0;
     }
+  }
+
+  .user-name {
+    margin-left: 0.5rem;
+    font-weight: 500;
+    color: #5eaa6f;
   }
 </style>
