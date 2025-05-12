@@ -63,31 +63,41 @@
       <div class="menu-container" class:open={mobileMenuOpen}>
         <ul class="nav-menu">
           <li class:active={$page.url.pathname === "/"}>
-            <a href="/">{isEnglish ? "Home" : "होम"}</a>
+            <a href="/" on:click={() => (mobileMenuOpen = false)}
+              >{isEnglish ? "Home" : "होम"}</a
+            >
           </li>
           <li
             class:active={$page.url.pathname === "/products" ||
               $page.url.pathname.startsWith("/products/")}
           >
-            <a href="/products">{isEnglish ? "Products" : "उत्पाद"}</a>
+            <a href="/products" on:click={() => (mobileMenuOpen = false)}
+              >{isEnglish ? "Products" : "उत्पाद"}</a
+            >
           </li>
           <li
             class:active={$page.url.pathname === "/subscription" ||
               $page.url.pathname.startsWith("/subscription/")}
           >
-            <a href="/subscription">{isEnglish ? "Subscription" : "सदस्यता"}</a>
+            <a href="/subscription" on:click={() => (mobileMenuOpen = false)}
+              >{isEnglish ? "Subscription" : "सदस्यता"}</a
+            >
           </li>
           <li
             class:active={$page.url.pathname === "/orders" ||
               $page.url.pathname.startsWith("/orders/")}
           >
-            <a href="/orders">{isEnglish ? "My Orders" : "मेरे ऑर्डर"}</a>
+            <a href="/orders" on:click={() => (mobileMenuOpen = false)}
+              >{isEnglish ? "My Orders" : "मेरे ऑर्डर"}</a
+            >
           </li>
           <li
             class:active={$page.url.pathname === "/about" ||
               $page.url.pathname.startsWith("/about/")}
           >
-            <a href="/about">{isEnglish ? "About Us" : "हमारे बारे में"}</a>
+            <a href="/about" on:click={() => (mobileMenuOpen = false)}
+              >{isEnglish ? "About Us" : "हमारे बारे में"}</a
+            >
           </li>
         </ul>
 
@@ -96,7 +106,11 @@
             {isEnglish ? "हिंदी" : "English"}
           </button>
 
-          <a href="/cart" class="cart-button">
+          <a
+            href="/cart"
+            class="cart-button"
+            on:click={() => (mobileMenuOpen = false)}
+          >
             <span class="cart-icon">🛒</span>
             {#if $cartItemCount > 0}
               <span class="cart-count">{$cartItemCount}</span>
@@ -104,7 +118,11 @@
             <span class="cart-total">₹{$cartTotal.toFixed(2)}</span>
           </a>
 
-          <a href="/profile" class="profile-link">
+          <a
+            href="/profile"
+            class="profile-link"
+            on:click={() => (mobileMenuOpen = false)}
+          >
             <span class="profile-icon">👤</span>
             {#if isLoggedIn && userFirstName}
               <span class="user-name">{userFirstName}</span>
