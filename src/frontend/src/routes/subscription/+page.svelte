@@ -22,6 +22,9 @@
   let isLoggedIn = false;
   let phoneNumber = ""; // Added for user identification
 
+  // Add the message variable declaration
+  let message = "";
+
   // Subscription form data structure
   interface SubscriptionProduct {
     id: bigint;
@@ -32,8 +35,58 @@
     unit: string;
     pricePerUnit: number; // Added price per unit
     displayPrice: string;
+    deliveryDays: { [key: string]: boolean }; // Delivery days per product
   }
 
+  // Function to calculate estimated subtotal for a single product
+  function calculateProductSubtotal(
+    product: SubscriptionProduct,
+    sDate: string,
+    eDate: string
+  ): number {
+    if (!product.selected || !sDate || !eDate) {
+      return 0;
+    }
+    const totalSubscriptionDays = daysBetween(sDate, eDate);
+    if (totalSubscriptionDays <= 0) {
+      return 0;
+    }
+
+    const productSelectedDayCount = Object.values(product.deliveryDays).filter(
+      Boolean
+    ).length;
+
+    if (productSelectedDayCount > 0 && product.quantity > 0) {
+      const deliveriesPerSelectedDayType = Math.ceil(totalSubscriptionDays / 7); // How many Mondays, Tuesdays etc. in the period
+      // More accurate: count actual specific days
+      // For simplicity here, we'll use a proportional estimate based on selected days
+      // This might not be perfectly accurate if the period is short / doesn't align with full weeks
+
+      // Estimate total deliveries for this product
+      // A simple approach: (total days / 7) * number of selected days for this product
+      // This effectively gives an average number of deliveries per week for chosen days.
+      const estimatedDeliveries = Math.ceil(
+        (totalSubscriptionDays / 7) * productSelectedDayCount
+      );
+
+      const costPerDelivery = product.pricePerUnit * product.quantity;
+      return costPerDelivery * estimatedDeliveries;
+    }
+    return 0;
+  }
+
+  // --- Define Default Delivery Days --- (Helper)
+  const defaultProductDeliveryDays = () => ({
+    monday: false,
+    tuesday: false,
+    wednesday: false,
+    thursday: false,
+    friday: false,
+    saturday: false,
+    sunday: false,
+  });
+
+  // --- Initialize allProductsData with default deliveryDays ---
   let allProductsData: SubscriptionProduct[] = [
     {
       id: BigInt(1),
@@ -44,6 +97,7 @@
       unit: "litre",
       pricePerUnit: 70,
       displayPrice: "₹70/litre",
+      deliveryDays: defaultProductDeliveryDays(),
     },
     {
       id: BigInt(2),
@@ -54,6 +108,7 @@
       unit: "kg",
       pricePerUnit: 300,
       displayPrice: "₹300/kg",
+      deliveryDays: defaultProductDeliveryDays(),
     },
     {
       id: BigInt(3),
@@ -64,6 +119,7 @@
       unit: "kg",
       pricePerUnit: 100,
       displayPrice: "₹100/kg",
+      deliveryDays: defaultProductDeliveryDays(),
     },
     {
       id: BigInt(4),
@@ -74,6 +130,7 @@
       unit: "kg",
       pricePerUnit: 50,
       displayPrice: "₹50/kg",
+      deliveryDays: defaultProductDeliveryDays(),
     },
     {
       id: BigInt(5),
@@ -84,6 +141,7 @@
       unit: "litre",
       pricePerUnit: 20,
       displayPrice: "₹20/litre",
+      deliveryDays: defaultProductDeliveryDays(),
     },
     {
       id: BigInt(6),
@@ -94,6 +152,7 @@
       unit: "kg",
       pricePerUnit: 600,
       displayPrice: "₹600/kg",
+      deliveryDays: defaultProductDeliveryDays(),
     },
     {
       id: BigInt(7),
@@ -104,24 +163,14 @@
       unit: "kg",
       pricePerUnit: 300,
       displayPrice: "₹300/kg",
+      deliveryDays: defaultProductDeliveryDays(),
     },
   ];
 
-  // State for the form - initialized with defaults or loaded from storage
-  let selectedProducts: SubscriptionProduct[] = []; // Initialize empty, will be populated in onMount
+  // State for the form - holds the current state of products including their specific delivery days
+  let selectedProducts: SubscriptionProduct[] = [];
 
-  // Fraction options for quantity selection
   const fractionOptions = [0.25, 0.5, 0.75, 1];
-
-  let deliveryDays = {
-    monday: false, // Default to false, load from storage if exists
-    tuesday: false,
-    wednesday: false,
-    thursday: false,
-    friday: false,
-    saturday: false,
-    sunday: false,
-  };
 
   let preferredTime = "morning";
   let startDate = "";
@@ -129,6 +178,22 @@
 
   // Variable to hold raw JSON string from localStorage, accessible in template
   let existingSubscriptionJSON: string | null = null;
+
+  // Reactive variable for total estimated subscription cost
+  let totalEstimatedSubscriptionCost = 0;
+
+  // Reactive statement to update total estimated cost
+  $: {
+    let currentTotal = 0;
+    if (selectedProducts && startDate && endDate) {
+      selectedProducts.forEach((product) => {
+        if (product.selected) {
+          currentTotal += calculateProductSubtotal(product, startDate, endDate);
+        }
+      });
+    }
+    totalEstimatedSubscriptionCost = currentTotal;
+  }
 
   onMount(async () => {
     // Set default dates ONLY if not loading existing data
@@ -144,45 +209,51 @@
     existingSubscriptionJSON = localStorage.getItem("userSubscription");
 
     if (existingSubscriptionJSON) {
-      const existingSubscription = JSON.parse(existingSubscriptionJSON);
+      try {
+        const existingSubscription = JSON.parse(existingSubscriptionJSON);
 
-      // Load existing data
-      deliveryDays = existingSubscription.deliveryDays;
-      preferredTime = existingSubscription.preferredTime;
-      startDate = existingSubscription.startDate;
-      endDate = existingSubscription.endDate;
+        // Load common data
+        preferredTime = existingSubscription.preferredTime || "morning";
+        startDate = existingSubscription.startDate || defaultStartDate;
+        endDate = existingSubscription.endDate || defaultEndDate;
 
-      // Populate selectedProducts based on existing subscription and allProductsData
-      selectedProducts = allProductsData.map((p) => {
-        const existingProduct = existingSubscription.products.find(
-          (ep: any) => ep.id === p.id.toString()
-        ); // Find by string ID
-        return {
-          ...p,
-          selected: !!existingProduct, // Check if product exists in subscription
-          quantity: existingProduct ? existingProduct.quantity : p.quantity, // Use saved quantity or default
-        };
-      });
+        // --- Populate selectedProducts with specific delivery days ---
+        selectedProducts = allProductsData.map((p) => {
+          const existingProduct = existingSubscription.products.find(
+            (ep: any) => ep.id === p.id.toString()
+          );
+          // If product exists in saved sub, load its data, else use defaults
+          return {
+            ...p,
+            selected: !!existingProduct,
+            quantity: existingProduct ? existingProduct.quantity : 1,
+            // Load delivery days IF they exist on the saved product, else use defaults
+            deliveryDays:
+              existingProduct && existingProduct.deliveryDays
+                ? {
+                    ...defaultProductDeliveryDays(),
+                    ...existingProduct.deliveryDays,
+                  } // Merge saved with defaults
+                : defaultProductDeliveryDays(),
+          };
+        });
+      } catch (e) {
+        console.error(
+          "Failed to parse existing subscription, initializing defaults.",
+          e
+        );
+        // Initialize with defaults if parsing fails
+        startDate = defaultStartDate;
+        endDate = defaultEndDate;
+        selectedProducts = allProductsData.map((p) => ({ ...p })); // Fresh copy with defaults
+      }
     } else {
       // No existing subscription, use defaults
       startDate = defaultStartDate;
       endDate = defaultEndDate;
-      // Use default delivery days (e.g., all true or all false as preferred)
-      deliveryDays = {
-        monday: true,
-        tuesday: true,
-        wednesday: true,
-        thursday: true,
-        friday: true,
-        saturday: true,
-        sunday: true,
-      };
-      // Initialize selectedProducts with defaults (all unselected)
-      selectedProducts = allProductsData.map((p) => ({
-        ...p,
-        selected: false,
-        quantity: 1,
-      }));
+      preferredTime = "morning";
+      // Initialize selectedProducts with defaults (all unselected, default days)
+      selectedProducts = allProductsData.map((p) => ({ ...p })); // Fresh copy with defaults
     }
 
     // Check login status and load profile (remains the same)
@@ -206,52 +277,59 @@
       (p) => p.selected
     );
     const hasSelectedProducts = currentlySelectedProducts.length > 0;
-    const hasSelectedDays = Object.values(deliveryDays).some((day) => day);
+
+    // --- Validation: Check if at least one selected product has at least one delivery day ---
+    const hasSelectedDaysForAnyProduct = currentlySelectedProducts.some((p) =>
+      Object.values(p.deliveryDays).some((isSelected) => isSelected)
+    );
 
     if (
       !hasSelectedProducts ||
-      !hasSelectedDays ||
+      !hasSelectedDaysForAnyProduct || // Updated validation
       !startDate ||
       !endDate ||
       !isLoggedIn
     ) {
       subscriptionError = true;
       subscriptionLoading = false;
+      message =
+        "Please select at least one product and ensure it has at least one delivery day selected. Also check dates."; // More specific error
       return;
     }
 
-    // --- Calculate Total Price ---
+    message = ""; // Clear previous error message
+
+    // --- Updated Price Calculation ---
     let totalCost = 0;
     const totalSubscriptionDays = daysBetween(startDate, endDate);
-    const selectedDayCount = Object.values(deliveryDays).filter(Boolean).length;
-
-    // Estimate number of delivery instances for each selected day
-    // This is an approximation. A more precise calculation would iterate through each day.
-    // For simplicity, let's assume an even distribution over the period.
-    const deliveriesPerSelectedDay = Math.ceil(
-      totalSubscriptionDays * (selectedDayCount / 7)
-    );
 
     currentlySelectedProducts.forEach((product) => {
-      const costPerDelivery = product.pricePerUnit * product.quantity;
-      totalCost += costPerDelivery * deliveriesPerSelectedDay;
+      const productSelectedDayCount = Object.values(
+        product.deliveryDays
+      ).filter(Boolean).length;
+      if (productSelectedDayCount > 0) {
+        // Estimate deliveries for THIS product based on ITS schedule
+        const deliveriesPerSelectedDay = Math.ceil(
+          totalSubscriptionDays * (productSelectedDayCount / 7)
+        );
+        const costPerDelivery = product.pricePerUnit * product.quantity;
+        totalCost += costPerDelivery * deliveriesPerSelectedDay;
+      }
     });
-    // --- End Price Calculation ---
+    // --- End Updated Price Calculation ---
 
-    // Create subscription object
+    // --- Create subscription object with new structure ---
     const subscriptionData = {
       products: currentlySelectedProducts.map((p) => ({
-        // Use currentlySelectedProducts
-        id: p.id.toString(), // Convert BigInt ID to string
+        id: p.id.toString(),
         name: p.name,
         quantity: p.quantity,
         unit: p.unit,
         pricePerUnit: p.pricePerUnit,
         displayPrice: p.displayPrice,
-        // We don't need description or selected status saved inside the product list
+        deliveryDays: p.deliveryDays, // Include the specific delivery days for the product
       })),
-      deliveryDays,
-      preferredTime,
+      preferredTime, // Keep preferred time common
       startDate,
       endDate,
       address: userProfile?.address || "",
@@ -341,64 +419,133 @@
   {:else if selectedProducts.length > 0}
     <form on:submit|preventDefault={handleSubmit} class="subscription-form">
       <div class="form-section">
-        <h2>1. Select Products</h2>
+        <h2>1. Select Products &amp; Delivery Days</h2>
         <div class="products-list">
           {#each selectedProducts as product, index (product.id)}
-            <div class="product-item">
-              <div class="product-details">
-                <input
-                  type="checkbox"
-                  bind:checked={product.selected}
-                  id={`product-${product.id}`}
-                />
-                <label for={`product-${product.id}`} class="product-info">
-                  <h3 class="product-name">
-                    {@html product.name.replace(/\n/g, "<br>")}
-                  </h3>
-                  <p class="product-description">
-                    {@html product.description.replace(/\n/g, "<br>")}
-                  </p>
-                  <p class="product-price">{product.displayPrice}</p>
-                </label>
+            <div class="product-item {product.selected ? 'is-selected' : ''}">
+              <div class="product-main-row">
+                <div class="product-details">
+                  <input
+                    type="checkbox"
+                    bind:checked={product.selected}
+                    id={`product-${product.id}`}
+                  />
+                  <label for={`product-${product.id}`} class="product-info">
+                    <h3 class="product-name">
+                      {@html product.name.replace(/\n/g, "<br>")}
+                    </h3>
+                    <p class="product-description">
+                      {@html product.description.replace(/\n/g, "<br>")}
+                    </p>
+                    <p class="product-price">{product.displayPrice}</p>
+                  </label>
+                </div>
+
+                {#if product.selected}
+                  <div class="quantity-controls">
+                    <div class="quantity-input-group">
+                      <button
+                        type="button"
+                        class="quantity-btn"
+                        on:click={() => decrementQuantity(index)}>-</button
+                      >
+                      <input
+                        type="text"
+                        inputmode="decimal"
+                        class="quantity-input"
+                        bind:value={product.quantity}
+                        on:input={(e) => handleInputChange(index, e)}
+                        min="0.25"
+                        step="0.25"
+                      />
+                      <button
+                        type="button"
+                        class="quantity-btn"
+                        on:click={() => incrementQuantity(index)}>+</button
+                      >
+                    </div>
+
+                    <div class="fraction-group">
+                      {#each fractionOptions as fraction}
+                        <button
+                          type="button"
+                          class="fraction-btn {product.quantity === fraction
+                            ? 'active'
+                            : ''}"
+                          on:click={() => setQuantity(index, fraction)}
+                        >
+                          {fraction}
+                        </button>
+                      {/each}
+                    </div>
+                  </div>
+                {/if}
               </div>
 
               {#if product.selected}
-                <div class="quantity-controls">
-                  <div class="quantity-input-group">
-                    <button
-                      type="button"
-                      class="quantity-btn"
-                      on:click={() => decrementQuantity(index)}>-</button
-                    >
-                    <input
-                      type="text"
-                      inputmode="decimal"
-                      class="quantity-input"
-                      bind:value={product.quantity}
-                      on:input={(e) => handleInputChange(index, e)}
-                      min="0.25"
-                      step="0.25"
-                    />
-                    <button
-                      type="button"
-                      class="quantity-btn"
-                      on:click={() => incrementQuantity(index)}>+</button
-                    >
+                <div class="product-delivery-days">
+                  <h4 class="delivery-days-title">
+                    Select Delivery Days for {product.name.replace(/\n/g, " ")}:
+                  </h4>
+                  <div class="days-selection product-specific-days">
+                    <label class="day-item">
+                      <input
+                        type="checkbox"
+                        bind:checked={product.deliveryDays.monday}
+                      /> <span>Mon</span>
+                    </label>
+                    <label class="day-item">
+                      <input
+                        type="checkbox"
+                        bind:checked={product.deliveryDays.tuesday}
+                      /> <span>Tue</span>
+                    </label>
+                    <label class="day-item">
+                      <input
+                        type="checkbox"
+                        bind:checked={product.deliveryDays.wednesday}
+                      /> <span>Wed</span>
+                    </label>
+                    <label class="day-item">
+                      <input
+                        type="checkbox"
+                        bind:checked={product.deliveryDays.thursday}
+                      /> <span>Thu</span>
+                    </label>
+                    <label class="day-item">
+                      <input
+                        type="checkbox"
+                        bind:checked={product.deliveryDays.friday}
+                      /> <span>Fri</span>
+                    </label>
+                    <label class="day-item">
+                      <input
+                        type="checkbox"
+                        bind:checked={product.deliveryDays.saturday}
+                      /> <span>Sat</span>
+                    </label>
+                    <label class="day-item">
+                      <input
+                        type="checkbox"
+                        bind:checked={product.deliveryDays.sunday}
+                      /> <span>Sun</span>
+                    </label>
                   </div>
+                </div>
 
-                  <div class="fraction-group">
-                    {#each fractionOptions as fraction}
-                      <button
-                        type="button"
-                        class="fraction-btn {product.quantity === fraction
-                          ? 'active'
-                          : ''}"
-                        on:click={() => setQuantity(index, fraction)}
-                      >
-                        {fraction}
-                      </button>
-                    {/each}
-                  </div>
+                <!-- Display Estimated Product Subtotal -->
+                <div class="product-subtotal">
+                  Estimated Cost for {product.name.replace(/\n/g, " ")}:
+                  <strong>
+                    ₹{calculateProductSubtotal(
+                      product,
+                      startDate,
+                      endDate
+                    ).toFixed(2)}
+                  </strong>
+                  <p class="subtotal-note">
+                    (Updates with quantity, days, and period)
+                  </p>
                 </div>
               {/if}
             </div>
@@ -407,41 +554,7 @@
       </div>
 
       <div class="form-section">
-        <h2>2. Delivery Days</h2>
-        <div class="days-selection">
-          <label class="day-item">
-            <input type="checkbox" bind:checked={deliveryDays.monday} />
-            <span>Mon</span>
-          </label>
-          <label class="day-item">
-            <input type="checkbox" bind:checked={deliveryDays.tuesday} />
-            <span>Tue</span>
-          </label>
-          <label class="day-item">
-            <input type="checkbox" bind:checked={deliveryDays.wednesday} />
-            <span>Wed</span>
-          </label>
-          <label class="day-item">
-            <input type="checkbox" bind:checked={deliveryDays.thursday} />
-            <span>Thu</span>
-          </label>
-          <label class="day-item">
-            <input type="checkbox" bind:checked={deliveryDays.friday} />
-            <span>Fri</span>
-          </label>
-          <label class="day-item">
-            <input type="checkbox" bind:checked={deliveryDays.saturday} />
-            <span>Sat</span>
-          </label>
-          <label class="day-item">
-            <input type="checkbox" bind:checked={deliveryDays.sunday} />
-            <span>Sun</span>
-          </label>
-        </div>
-      </div>
-
-      <div class="form-section">
-        <h2>3. Preferred Time</h2>
+        <h2>2. Preferred Time</h2>
         <div class="time-selection">
           <label class="radio-container">
             <input
@@ -465,7 +578,7 @@
       </div>
 
       <div class="form-section">
-        <h2>4. Subscription Period</h2>
+        <h2>3. Subscription Period</h2>
         <div class="date-selection">
           <div class="form-group">
             <label for="start-date">Start Date:</label>
@@ -490,8 +603,8 @@
         </div>
       </div>
 
-      <div class="delivery-address">
-        <h2>5. Delivery Address</h2>
+      <div class="delivery-address form-section">
+        <h2>4. Delivery Address</h2>
         <p>We'll deliver to your registered address:</p>
         <div class="address-display">
           {#if userProfile}
@@ -503,12 +616,18 @@
         <a href="/profile" class="address-change-link">Update address</a>
       </div>
 
-      {#if subscriptionError}
+      {#if message && !subscriptionSuccess}
         <div class="error-message">
-          Please fill all required fields and select at least one product and
-          delivery day.
+          {message}
         </div>
       {/if}
+
+      <div class="form-section total-cost-display">
+        <h3>Total Estimated Subscription Cost:</h3>
+        <p class="total-cost-value">
+          ₹{totalEstimatedSubscriptionCost.toFixed(2)}
+        </p>
+      </div>
 
       <div class="form-actions">
         <button
@@ -583,12 +702,28 @@
   }
 
   .product-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: stretch;
     padding: 15px;
     background-color: #f8f8f8;
     border-radius: 8px;
+    border: 1px solid #eee;
+    transition: background-color 0.2s ease;
+  }
+
+  .product-item.is-selected {
+    background-color: #e8f5e9;
+    border-left: 4px solid #5eaa6f;
+    padding-left: 11px;
+  }
+
+  .product-main-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 10px;
   }
 
   .product-details {
@@ -640,7 +775,7 @@
     gap: 10px;
     margin-top: 5px;
     flex-shrink: 0;
-    margin-left: 15px;
+    margin-left: auto;
   }
 
   .quantity-input-group {
@@ -704,17 +839,55 @@
     color: white;
   }
 
-  /* Other existing styles */
+  .product-delivery-days {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed #ddd;
+  }
+
+  .delivery-days-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 10px;
+  }
+
+  .product-specific-days {
+    padding: 0.5rem;
+    background-color: #fff;
+    border-radius: 4px;
+    border: 1px solid #eee;
+  }
+
+  .product-subtotal {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #f0fff0; /* Light green background */
+    border: 1px solid #d0f0d0; /* Light green border */
+    border-radius: 4px;
+    font-size: 0.95rem;
+    color: #38761d; /* Darker green text */
+  }
+  .product-subtotal strong {
+    font-weight: bold;
+    font-size: 1.05rem;
+  }
+  .subtotal-note {
+    font-size: 0.8rem;
+    color: #555;
+    margin-top: 4px;
+  }
+
   .days-selection {
     display: flex;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 5px;
   }
 
   .day-item {
-    flex: 1;
-    min-width: 60px;
+    flex: 1 1 auto;
+    min-width: 55px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -790,10 +963,12 @@
 
   .error-message {
     color: #e53935;
-    margin-bottom: 1rem;
-    padding: 0.5rem;
+    margin: 1rem 0;
+    padding: 0.75rem 1rem;
     background: rgba(229, 57, 53, 0.1);
     border-radius: 4px;
+    border: 1px solid rgba(229, 57, 53, 0.2);
+    text-align: center;
   }
 
   .form-actions {
@@ -862,23 +1037,8 @@
       padding: 1.5rem 1rem;
     }
 
-    .product-item {
-      flex-direction: row;
-      align-items: flex-start;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .product-details {
-      width: 100%;
-      margin-bottom: 10px;
-    }
-
-    .quantity-controls {
-      width: 100%;
-      margin-left: 0;
-      align-self: flex-end;
-      max-width: 250px;
+    .product-main-row {
+      flex-direction: column;
     }
   }
 
@@ -916,5 +1076,26 @@
       padding: 4px 0;
       font-size: 0.8rem;
     }
+  }
+
+  .total-cost-display {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background-color: #e8f5e9; /* Light green background */
+    border: 1px solid #c8e6c9; /* Slightly darker green border */
+    border-radius: 8px;
+    text-align: center;
+  }
+
+  .total-cost-display h3 {
+    font-size: 1.1rem;
+    color: #38761d; /* Dark green text */
+    margin-bottom: 0.5rem;
+  }
+
+  .total-cost-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2e7d32; /* Stronger green for the value */
   }
 </style>

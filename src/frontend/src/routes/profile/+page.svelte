@@ -57,32 +57,24 @@
   function formatSubscriptionDataForDisplay() {
     if (!subscriptionData) return;
 
-    // Format Delivery Days (e.g., Mon, Tue, Wed)
-    const dayMap: { [key: string]: string } = {
-      monday: "Mon",
-      tuesday: "Tue",
-      wednesday: "Wed",
-      thursday: "Thu",
-      friday: "Fri",
-      saturday: "Sat",
-      sunday: "Sun",
-    };
-    formattedDeliveryDays = Object.entries(subscriptionData.deliveryDays)
-      .filter(([_, isSelected]) => isSelected)
-      .map(([day]) => dayMap[day] || day)
-      .join(", ");
+    // Format Product Names (e.g., Milk, Paneer) - Check if products array exists
+    formattedProductNames =
+      subscriptionData.products && Array.isArray(subscriptionData.products)
+        ? subscriptionData.products
+            .map((p: any) => p.name.replace(/\n/g, " "))
+            .join(", ")
+        : "N/A";
 
-    // Format Product Names (e.g., Milk, Paneer)
-    formattedProductNames = subscriptionData.products
-      .map((p: any) => p.name.replace(/\n/g, " "))
-      .join(", ");
+    // Format Dates (e.g., 15/12/2024 - 14/01/2025) - Add checks
+    const startDateStr = subscriptionData.startDate
+      ? new Date(subscriptionData.startDate).toLocaleDateString()
+      : "N/A";
+    const endDateStr = subscriptionData.endDate
+      ? new Date(subscriptionData.endDate).toLocaleDateString()
+      : "N/A";
+    formattedSubscriptionDates = `${startDateStr} - ${endDateStr}`;
 
-    // Format Dates (e.g., 15/12/2024 - 14/01/2025)
-    const startDate = new Date(subscriptionData.startDate).toLocaleDateString();
-    const endDate = new Date(subscriptionData.endDate).toLocaleDateString();
-    formattedSubscriptionDates = `${startDate} - ${endDate}`;
-
-    // Format Total Cost (e.g., ₹1234.50)
+    // Format Total Cost (e.g., ₹1234.50) - Check remains same
     formattedTotalCost =
       subscriptionData.totalCost &&
       typeof subscriptionData.totalCost === "number"
@@ -252,8 +244,8 @@
             <div class="subscription-details">
               <!-- Display formatted product names -->
               <p><strong>Products:</strong> {formattedProductNames}</p>
-              <!-- Display formatted delivery days -->
-              <p><strong>Delivery:</strong> {formattedDeliveryDays}</p>
+              <!-- Display generic delivery text -->
+              <p><strong>Delivery:</strong> Varies per product</p>
               <!-- Display preferred time -->
               <p>
                 <strong>Time:</strong>
