@@ -1,6 +1,6 @@
 import { toastsStore } from "@dfinity/gix-components";
 import { backendActor } from "./agent";
-import type { Product, UserProfile, Order, OrderItemInput, OrderStatus } from "./types";
+import type { Product, UserProfile, Order, OrderItemInput, OrderStatus, Subscription, CreateSubscriptionPayload, UpdateSubscriptionDetailsPayload } from "./types";
 
 // Products
 export async function getProducts(): Promise<Product[]> {
@@ -105,7 +105,7 @@ export async function createOrder(phoneNumber: string, items: OrderItemInput[], 
       product_id: BigInt(item.product_id),
       quantity: item.quantity
     }));
-    
+
     const result = await backendActor.create_order(phoneNumber, backendItems, deliveryAddress);
     if ("Ok" in result) {
       toastsStore.show({
@@ -198,4 +198,258 @@ export async function getOrderDetails(orderId: bigint, phoneNumber: string): Pro
     });
     throw new Error("Failed to fetch order details");
   }
+}
+
+// Subscriptions
+
+// Create a new subscription
+export async function createSubscription(phoneNumber: string, payload: CreateSubscriptionPayload): Promise<Subscription | null> {
+  try {
+    // Convert frontend format to backend format
+    const backendPayload = {
+      items: payload.items.map(item => ({
+        product_id: BigInt(item.product_id),
+        quantity: item.quantity
+      })),
+      delivery_days: payload.delivery_days,
+      delivery_time_slot: payload.delivery_time_slot,
+      delivery_address: payload.delivery_address,
+      start_date: BigInt(payload.start_date)
+    };
+
+    const result = await backendActor.create_subscription(phoneNumber, backendPayload);
+
+    if ("Ok" in result) {
+      // Convert backend subscription to frontend format
+      const subscription = result.Ok;
+      toastsStore.show({
+        text: "Subscription created successfully",
+        level: "success",
+      });
+      return convertBackendSubscription(subscription);
+    } else {
+      toastsStore.show({
+        text: `Failed to create subscription: ${result.Err}`,
+        level: "error",
+      });
+      return null;
+    }
+  } catch (error) {
+    console.error("Error creating subscription:", error);
+    toastsStore.show({
+      text: "Failed to create subscription",
+      level: "error",
+    });
+    throw new Error("Failed to create subscription");
+  }
+}
+
+// Get subscriptions for a user
+export async function getMySubscriptions(phoneNumber: string): Promise<Subscription[]> {
+  try {
+    const result = await backendActor.get_my_subscriptions(phoneNumber);
+
+    if ("Ok" in result) {
+      return result.Ok.map(subscription => convertBackendSubscription(subscription));
+    } else {
+      toastsStore.show({
+        text: `Failed to fetch subscriptions: ${result.Err}`,
+        level: "error",
+      });
+      return [];
+    }
+  } catch (error) {
+    console.error("Error fetching subscriptions:", error);
+    toastsStore.show({
+      text: "Failed to fetch subscriptions",
+      level: "error",
+    });
+    throw new Error("Failed to fetch subscriptions");
+  }
+}
+
+// Get details for a specific subscription
+export async function getSubscriptionDetails(subscriptionId: bigint, phoneNumber: string): Promise<Subscription | null> {
+  try {
+    const result = await backendActor.get_subscription_details(subscriptionId, phoneNumber);
+
+    if ("Ok" in result) {
+      return convertBackendSubscription(result.Ok);
+    } else {
+      toastsStore.show({
+        text: `Failed to fetch subscription details: ${result.Err}`,
+        level: "error",
+      });
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching subscription details:", error);
+    toastsStore.show({
+      text: "Failed to fetch subscription details",
+      level: "error",
+    });
+    throw new Error("Failed to fetch subscription details");
+  }
+}
+
+// Cancel a subscription
+export async function cancelSubscription(subscriptionId: bigint, phoneNumber: string): Promise<boolean> {
+  try {
+    const result = await backendActor.cancel_subscription(subscriptionId, phoneNumber);
+
+    if ("Ok" in result) {
+      toastsStore.show({
+        text: "Subscription cancelled successfully",
+        level: "success",
+      });
+      return true;
+    } else {
+      toastsStore.show({
+        text: `Failed to cancel subscription: ${result.Err}`,
+        level: "error",
+      });
+      return false;
+    }
+  } catch (error) {
+    console.error("Error cancelling subscription:", error);
+    toastsStore.show({
+      text: "Failed to cancel subscription",
+      level: "error",
+    });
+    throw new Error("Failed to cancel subscription");
+  }
+}
+
+// Pause a subscription
+export async function pauseSubscription(subscriptionId: bigint, phoneNumber: string): Promise<boolean> {
+  try {
+    const result = await backendActor.pause_subscription(subscriptionId, phoneNumber);
+
+    if ("Ok" in result) {
+      toastsStore.show({
+        text: "Subscription paused successfully",
+        level: "success",
+      });
+      return true;
+    } else {
+      toastsStore.show({
+        text: `Failed to pause subscription: ${result.Err}`,
+        level: "error",
+      });
+      return false;
+    }
+  } catch (error) {
+    console.error("Error pausing subscription:", error);
+    toastsStore.show({
+      text: "Failed to pause subscription",
+      level: "error",
+    });
+    throw new Error("Failed to pause subscription");
+  }
+}
+
+// Resume a subscription
+export async function resumeSubscription(subscriptionId: bigint, phoneNumber: string): Promise<boolean> {
+  try {
+    const result = await backendActor.resume_subscription(subscriptionId, phoneNumber);
+
+    if ("Ok" in result) {
+      toastsStore.show({
+        text: "Subscription resumed successfully",
+        level: "success",
+      });
+      return true;
+    } else {
+      toastsStore.show({
+        text: `Failed to resume subscription: ${result.Err}`,
+        level: "error",
+      });
+      return false;
+    }
+  } catch (error) {
+    console.error("Error resuming subscription:", error);
+    toastsStore.show({
+      text: "Failed to resume subscription",
+      level: "error",
+    });
+    throw new Error("Failed to resume subscription");
+  }
+}
+
+// Update subscription details
+export async function updateSubscriptionDetails(
+  subscriptionId: bigint,
+  phoneNumber: string,
+  updatePayload: UpdateSubscriptionDetailsPayload
+): Promise<Subscription | null> {
+  try {
+    // Convert frontend format to backend format
+    const backendPayload: any = {};
+
+    if (updatePayload.items) {
+      backendPayload.items = updatePayload.items.map(item => ({
+        product_id: BigInt(item.product_id),
+        quantity: item.quantity
+      }));
+    }
+
+    if (updatePayload.delivery_days) {
+      backendPayload.delivery_days = updatePayload.delivery_days;
+    }
+
+    if (updatePayload.delivery_time_slot) {
+      backendPayload.delivery_time_slot = updatePayload.delivery_time_slot;
+    }
+
+    if (updatePayload.delivery_address) {
+      backendPayload.delivery_address = updatePayload.delivery_address;
+    }
+
+    const result = await backendActor.update_subscription_details(
+      subscriptionId,
+      phoneNumber,
+      backendPayload
+    );
+
+    if ("Ok" in result) {
+      toastsStore.show({
+        text: "Subscription updated successfully",
+        level: "success",
+      });
+      return convertBackendSubscription(result.Ok);
+    } else {
+      toastsStore.show({
+        text: `Failed to update subscription: ${result.Err}`,
+        level: "error",
+      });
+      return null;
+    }
+  } catch (error) {
+    console.error("Error updating subscription:", error);
+    toastsStore.show({
+      text: "Failed to update subscription",
+      level: "error",
+    });
+    throw new Error("Failed to update subscription");
+  }
+}
+
+// Helper function to convert backend subscription format to frontend format
+function convertBackendSubscription(backendSubscription: any): Subscription {
+  return {
+    id: Number(backendSubscription.id),
+    user_phone_number: backendSubscription.user_phone_number,
+    items: backendSubscription.items.map((item: any) => ({
+      product_id: Number(item.product_id),
+      quantity: Number(item.quantity)
+    })),
+    delivery_days: backendSubscription.delivery_days,
+    delivery_time_slot: backendSubscription.delivery_time_slot,
+    delivery_address: backendSubscription.delivery_address,
+    start_date: Number(backendSubscription.start_date),
+    status: backendSubscription.status,
+    next_order_date: Number(backendSubscription.next_order_date),
+    created_at: Number(backendSubscription.created_at),
+    updated_at: Number(backendSubscription.updated_at)
+  };
 }

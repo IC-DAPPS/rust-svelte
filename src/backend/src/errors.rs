@@ -16,3 +16,15 @@ pub enum OrderError {
     AccessDenied,
     StorageError(String),
 }
+
+#[derive(candid::CandidType, Clone, Serialize, Deserialize, Debug)]
+pub enum SubscriptionError {
+    InvalidInput(String),
+    UserProfileNotFound,
+    ProductNotFound(u64),
+    SubscriptionNotFound,
+    AccessDenied,
+    StorageError(String),
+    AlreadyExists,
+    UpdateFailed(String),
+}

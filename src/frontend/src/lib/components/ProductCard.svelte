@@ -19,7 +19,7 @@
     if (savedCart) {
       try {
         const cart = JSON.parse(savedCart);
-        isInCart = cart.some((item) => item.product.id === product.id);
+        isInCart = cart.some((item: { product: { id: number; }; }) => item.product.id === product.id);
       } catch (e) {
         console.error("Failed to parse saved cart", e);
       }

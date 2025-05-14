@@ -40,4 +40,44 @@ export interface Order {
     delivery_address: string;
     timestamp: number;
     items: OrderItem[];
+}
+
+// Subscription Types
+export interface SubscriptionItem {
+    product_id: number;
+    quantity: number;
+}
+
+export type SubscriptionStatus =
+    | { Active: null }
+    | { Paused: null }
+    | { Cancelled: null };
+
+export interface Subscription {
+    id: number;
+    user_phone_number: string;
+    items: SubscriptionItem[];
+    delivery_days: string[];
+    delivery_time_slot: string;
+    delivery_address: string;
+    start_date: number;
+    status: SubscriptionStatus;
+    next_order_date: number;
+    created_at: number;
+    updated_at: number;
+}
+
+export interface CreateSubscriptionPayload {
+    items: SubscriptionItem[];
+    delivery_days: string[];
+    delivery_time_slot: string;
+    delivery_address: string;
+    start_date: number;
+}
+
+export interface UpdateSubscriptionDetailsPayload {
+    items?: SubscriptionItem[];
+    delivery_days?: string[];
+    delivery_time_slot?: string;
+    delivery_address?: string;
 } 

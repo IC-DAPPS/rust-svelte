@@ -1,8 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getProfile } from "$lib/api";
-  import type { UserProfile } from "$lib/types";
-  // Removing the import for userStore since it doesn't exist
+  import { getProfile, getProducts, createSubscription } from "$lib/api";
+  import {
+    subscriptionStore,
+    subscriptionCounts,
+  } from "$lib/stores/subscription";
+  import type { UserProfile, Product } from "$lib/types";
 
   // Helper function to calculate days between two dates
   function daysBetween(date1: string, date2: string): number {
@@ -75,7 +78,140 @@
     return 0;
   }
 
-  // --- Define Default Delivery Days --- (Helper)
+  // Initialize with empty array and load from API
+  let allProductsData: SubscriptionProduct[] = [];
+
+  const fractionOptions = [0.25, 0.5, 0.75, 1];
+
+  let preferredTime = "morning";
+  let startDate = "";
+  let endDate = "";
+
+  // Reactive variable for total estimated subscription cost
+  let totalEstimatedSubscriptionCost = 0;
+
+  // Reactive statement to update total estimated cost
+  $: {
+    let currentTotal = 0;
+    if (allProductsData && startDate && endDate) {
+      allProductsData.forEach((product) => {
+        if (product.selected) {
+          currentTotal += calculateProductSubtotal(product, startDate, endDate);
+        }
+      });
+    }
+    totalEstimatedSubscriptionCost = currentTotal;
+  }
+
+  // Update state for the form - holds the current state of products
+  let selectedProducts: SubscriptionProduct[] = [];
+
+  // Updating the selectedProducts when a product is selected or deselected
+  function updateSelectedProducts() {
+    selectedProducts = allProductsData.filter((p) => p.selected);
+  }
+
+  // --- Quantity Functions ---
+  // Simple increment function - ensure index is valid
+  function incrementQuantity(index: number) {
+    if (index >= 0 && index < allProductsData.length) {
+      allProductsData[index].quantity = parseFloat(
+        (allProductsData[index].quantity + 0.25).toFixed(2)
+      );
+      allProductsData = [...allProductsData]; // Trigger reactivity
+      updateSelectedProducts();
+    }
+  }
+
+  // Simple decrement function - ensure index is valid
+  function decrementQuantity(index: number) {
+    if (index >= 0 && index < allProductsData.length) {
+      const currentQuantity = allProductsData[index].quantity;
+      if (currentQuantity > 0.25) {
+        allProductsData[index].quantity = parseFloat(
+          (currentQuantity - 0.25).toFixed(2)
+        );
+        allProductsData = [...allProductsData]; // Trigger reactivity
+        updateSelectedProducts();
+      }
+    }
+  }
+
+  // Direct fraction setter - ensure index is valid
+  function setQuantity(index: number, amount: number) {
+    if (index >= 0 && index < allProductsData.length) {
+      allProductsData[index].quantity = amount;
+      allProductsData = [...allProductsData]; // Trigger reactivity
+      updateSelectedProducts();
+    }
+  }
+
+  // Handle input change - ensure index is valid
+  function handleInputChange(index: number, event: Event) {
+    if (index >= 0 && index < allProductsData.length) {
+      const input = event.target as HTMLInputElement;
+      const value = parseFloat(input.value);
+
+      if (!isNaN(value) && value >= 0.25) {
+        allProductsData[index].quantity = value;
+        allProductsData = [...allProductsData]; // Trigger reactivity
+        updateSelectedProducts();
+      }
+    }
+  }
+
+  // Add loading state for products
+  let isLoading = true;
+
+  onMount(async () => {
+    // Set default dates
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    startDate = tomorrow.toISOString().split("T")[0];
+
+    const oneMonthLater = new Date(tomorrow);
+    oneMonthLater.setDate(oneMonthLater.getDate() + 30);
+    endDate = oneMonthLater.toISOString().split("T")[0];
+
+    // Load user profile
+    try {
+      isLoading = true;
+      // For demo, use a hardcoded phone number or get from localStorage
+      phoneNumber = localStorage.getItem("userPhoneNumber") || "7389345065"; // Default for testing
+      userProfile = await getProfile(phoneNumber);
+      isLoggedIn = !!userProfile;
+
+      if (isLoggedIn) {
+        // Load user's subscriptions
+        await subscriptionStore.loadSubscriptions(phoneNumber);
+      }
+
+      // Load products from backend API
+      const products = await getProducts();
+
+      // Map backend products to subscription product format
+      allProductsData = products.map((p) => ({
+        id: BigInt(p.id),
+        name: p.name,
+        description: p.description,
+        selected: false,
+        quantity: 1,
+        unit: p.unit,
+        pricePerUnit: p.price,
+        displayPrice: `₹${p.price}/${p.unit}`,
+        deliveryDays: defaultProductDeliveryDays(),
+      }));
+
+      // Initially nothing is selected
+      updateSelectedProducts();
+    } catch (error) {
+      console.error("Error initializing subscription page:", error);
+    } finally {
+      isLoading = false;
+    }
+  });
+
+  // === Default Delivery Days (Helper) ===
   const defaultProductDeliveryDays = () => ({
     monday: false,
     tuesday: false,
@@ -86,311 +222,88 @@
     sunday: false,
   });
 
-  // --- Initialize allProductsData with default deliveryDays ---
-  let allProductsData: SubscriptionProduct[] = [
-    {
-      id: BigInt(1),
-      name: "Milk",
-      description: "Fresh Cow\nMilk",
-      selected: false,
-      quantity: 1,
-      unit: "litre",
-      pricePerUnit: 70,
-      displayPrice: "₹70/litre",
-      deliveryDays: defaultProductDeliveryDays(),
-    },
-    {
-      id: BigInt(2),
-      name: "Paneer",
-      description: "Fresh\nHomemade\nPaneer",
-      selected: false,
-      quantity: 1,
-      unit: "kg",
-      pricePerUnit: 300,
-      displayPrice: "₹300/kg",
-      deliveryDays: defaultProductDeliveryDays(),
-    },
-    {
-      id: BigInt(3),
-      name: "Methi\nDahi",
-      description: "Curd with\nFenugreek",
-      selected: false,
-      quantity: 1,
-      unit: "kg",
-      pricePerUnit: 100,
-      displayPrice: "₹100/kg",
-      deliveryDays: defaultProductDeliveryDays(),
-    },
-    {
-      id: BigInt(4),
-      name: "Khatti\nDahi",
-      description: "Sour Curd",
-      selected: false,
-      quantity: 1,
-      unit: "kg",
-      pricePerUnit: 50,
-      displayPrice: "₹50/kg",
-      deliveryDays: defaultProductDeliveryDays(),
-    },
-    {
-      id: BigInt(5),
-      name: "Matha",
-      description: "Buttermilk",
-      selected: false,
-      quantity: 1,
-      unit: "litre",
-      pricePerUnit: 20,
-      displayPrice: "₹20/litre",
-      deliveryDays: defaultProductDeliveryDays(),
-    },
-    {
-      id: BigInt(6),
-      name: "Ghee",
-      description: "Pure Desi Ghee",
-      selected: false,
-      quantity: 1,
-      unit: "kg",
-      pricePerUnit: 600,
-      displayPrice: "₹600/kg",
-      deliveryDays: defaultProductDeliveryDays(),
-    },
-    {
-      id: BigInt(7),
-      name: "Cream",
-      description: "Fresh Milk Cream",
-      selected: false,
-      quantity: 1,
-      unit: "kg",
-      pricePerUnit: 300,
-      displayPrice: "₹300/kg",
-      deliveryDays: defaultProductDeliveryDays(),
-    },
-  ];
-
-  // State for the form - holds the current state of products including their specific delivery days
-  let selectedProducts: SubscriptionProduct[] = [];
-
-  const fractionOptions = [0.25, 0.5, 0.75, 1];
-
-  let preferredTime = "morning";
-  let startDate = "";
-  let endDate = "";
-
-  // Variable to hold raw JSON string from localStorage, accessible in template
-  let existingSubscriptionJSON: string | null = null;
-
-  // Reactive variable for total estimated subscription cost
-  let totalEstimatedSubscriptionCost = 0;
-
-  // Reactive statement to update total estimated cost
-  $: {
-    let currentTotal = 0;
-    if (selectedProducts && startDate && endDate) {
-      selectedProducts.forEach((product) => {
-        if (product.selected) {
-          currentTotal += calculateProductSubtotal(product, startDate, endDate);
-        }
-      });
-    }
-    totalEstimatedSubscriptionCost = currentTotal;
-  }
-
-  onMount(async () => {
-    // Set default dates ONLY if not loading existing data
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const defaultStartDate = tomorrow.toISOString().split("T")[0];
-
-    const defaultEndDateObj = new Date();
-    defaultEndDateObj.setDate(defaultEndDateObj.getDate() + 30);
-    const defaultEndDate = defaultEndDateObj.toISOString().split("T")[0];
-
-    // Check for existing subscription
-    existingSubscriptionJSON = localStorage.getItem("userSubscription");
-
-    if (existingSubscriptionJSON) {
-      try {
-        const existingSubscription = JSON.parse(existingSubscriptionJSON);
-
-        // Load common data
-        preferredTime = existingSubscription.preferredTime || "morning";
-        startDate = existingSubscription.startDate || defaultStartDate;
-        endDate = existingSubscription.endDate || defaultEndDate;
-
-        // --- Populate selectedProducts with specific delivery days ---
-        selectedProducts = allProductsData.map((p) => {
-          const existingProduct = existingSubscription.products.find(
-            (ep: any) => ep.id === p.id.toString()
-          );
-          // If product exists in saved sub, load its data, else use defaults
-          return {
-            ...p,
-            selected: !!existingProduct,
-            quantity: existingProduct ? existingProduct.quantity : 1,
-            // Load delivery days IF they exist on the saved product, else use defaults
-            deliveryDays:
-              existingProduct && existingProduct.deliveryDays
-                ? {
-                    ...defaultProductDeliveryDays(),
-                    ...existingProduct.deliveryDays,
-                  } // Merge saved with defaults
-                : defaultProductDeliveryDays(),
-          };
-        });
-      } catch (e) {
-        console.error(
-          "Failed to parse existing subscription, initializing defaults.",
-          e
-        );
-        // Initialize with defaults if parsing fails
-        startDate = defaultStartDate;
-        endDate = defaultEndDate;
-        selectedProducts = allProductsData.map((p) => ({ ...p })); // Fresh copy with defaults
-      }
-    } else {
-      // No existing subscription, use defaults
-      startDate = defaultStartDate;
-      endDate = defaultEndDate;
-      preferredTime = "morning";
-      // Initialize selectedProducts with defaults (all unselected, default days)
-      selectedProducts = allProductsData.map((p) => ({ ...p })); // Fresh copy with defaults
-    }
-
-    // Check login status and load profile (remains the same)
-    const storedPhoneNumber = localStorage.getItem("userPhoneNumber");
-    isLoggedIn = !!storedPhoneNumber;
-    if (isLoggedIn && storedPhoneNumber) {
-      phoneNumber = storedPhoneNumber;
-      try {
-        userProfile = await getProfile(phoneNumber);
-      } catch (error) {
-        console.error("Failed to load user profile:", error);
-      }
-    }
-  });
-
-  function handleSubmit() {
-    subscriptionLoading = true;
-    subscriptionError = false;
-
-    const currentlySelectedProducts = selectedProducts.filter(
-      (p) => p.selected
-    );
-    const hasSelectedProducts = currentlySelectedProducts.length > 0;
-
-    // --- Validation: Check if at least one selected product has at least one delivery day ---
-    const hasSelectedDaysForAnyProduct = currentlySelectedProducts.some((p) =>
-      Object.values(p.deliveryDays).some((isSelected) => isSelected)
-    );
-
-    if (
-      !hasSelectedProducts ||
-      !hasSelectedDaysForAnyProduct || // Updated validation
-      !startDate ||
-      !endDate ||
-      !isLoggedIn
-    ) {
+  // Handle form submission
+  async function handleSubscriptionSubmit() {
+    if (!isLoggedIn || !userProfile) {
+      message = "Please log in to create a subscription";
       subscriptionError = true;
-      subscriptionLoading = false;
-      message =
-        "Please select at least one product and ensure it has at least one delivery day selected. Also check dates."; // More specific error
       return;
     }
 
-    message = ""; // Clear previous error message
+    const validProducts = selectedProducts.filter(
+      (p) => p.selected && Object.values(p.deliveryDays).some(Boolean)
+    );
 
-    // --- Updated Price Calculation ---
-    let totalCost = 0;
-    const totalSubscriptionDays = daysBetween(startDate, endDate);
+    if (validProducts.length === 0) {
+      message = "Please select at least one product and delivery day";
+      subscriptionError = true;
+      return;
+    }
 
-    currentlySelectedProducts.forEach((product) => {
-      const productSelectedDayCount = Object.values(
-        product.deliveryDays
-      ).filter(Boolean).length;
-      if (productSelectedDayCount > 0) {
-        // Estimate deliveries for THIS product based on ITS schedule
-        const deliveriesPerSelectedDay = Math.ceil(
-          totalSubscriptionDays * (productSelectedDayCount / 7)
+    subscriptionLoading = true;
+    subscriptionError = false;
+    subscriptionSuccess = false;
+
+    try {
+      // Convert selected days to array format expected by backend
+      const getSelectedDaysArray = (product: SubscriptionProduct): string[] => {
+        return Object.entries(product.deliveryDays)
+          .filter(([_, selected]) => selected)
+          .map(([day]) => day.charAt(0).toUpperCase() + day.slice(1));
+      };
+
+      // Create subscription payload
+      const subscriptionItems = validProducts.map((product) => ({
+        product_id: Number(product.id),
+        quantity: product.quantity,
+      }));
+
+      // Get all selected days across all products (can be handled differently if needed)
+      const allSelectedDays = new Set<string>();
+      validProducts.forEach((product) => {
+        getSelectedDaysArray(product).forEach((day) =>
+          allSelectedDays.add(day)
         );
-        const costPerDelivery = product.pricePerUnit * product.quantity;
-        totalCost += costPerDelivery * deliveriesPerSelectedDay;
+      });
+
+      // Create the payload
+      const payload = {
+        items: subscriptionItems,
+        delivery_days: Array.from(allSelectedDays),
+        delivery_time_slot:
+          preferredTime === "morning"
+            ? "Morning (6 AM - 9 AM)"
+            : "Evening (5 PM - 8 PM)",
+        delivery_address: userProfile.address,
+        start_date: new Date(startDate).getTime() * 1000000, // Convert to nanoseconds for backend
+      };
+
+      // Call backend API
+      const result = await createSubscription(phoneNumber, payload);
+
+      if (result) {
+        subscriptionSuccess = true;
+        subscriptionStore.addSubscription(result);
+        message = "Subscription created successfully!";
+
+        // Reset form
+        selectedProducts = [];
+        allProductsData = allProductsData.map((p) => ({
+          ...p,
+          selected: false,
+          quantity: 1,
+          deliveryDays: defaultProductDeliveryDays(),
+        }));
+      } else {
+        subscriptionError = true;
+        message = "Failed to create subscription";
       }
-    });
-    // --- End Updated Price Calculation ---
-
-    // --- Create subscription object with new structure ---
-    const subscriptionData = {
-      products: currentlySelectedProducts.map((p) => ({
-        id: p.id.toString(),
-        name: p.name,
-        quantity: p.quantity,
-        unit: p.unit,
-        pricePerUnit: p.pricePerUnit,
-        displayPrice: p.displayPrice,
-        deliveryDays: p.deliveryDays, // Include the specific delivery days for the product
-      })),
-      preferredTime, // Keep preferred time common
-      startDate,
-      endDate,
-      address: userProfile?.address || "",
-      phoneNumber,
-      totalCost: totalCost, // Add total cost
-      createdAt: new Date().toISOString(),
-    };
-
-    // Save to localStorage
-    localStorage.setItem("userSubscription", JSON.stringify(subscriptionData));
-
-    // Simulate API call
-    setTimeout(() => {
+    } catch (error) {
+      console.error("Error creating subscription:", error);
+      subscriptionError = true;
+      message = "An error occurred while creating your subscription";
+    } finally {
       subscriptionLoading = false;
-      subscriptionSuccess = true;
-    }, 1500);
-  }
-
-  // --- Quantity Functions (remain largely the same, ensure they work with the new selectedProducts structure) ---
-
-  // Simple increment function - ensure index is valid
-  function incrementQuantity(index: number) {
-    if (index >= 0 && index < selectedProducts.length) {
-      selectedProducts[index].quantity = parseFloat(
-        (selectedProducts[index].quantity + 0.25).toFixed(2)
-      );
-      selectedProducts = [...selectedProducts]; // Trigger reactivity
-    }
-  }
-
-  // Simple decrement function - ensure index is valid
-  function decrementQuantity(index: number) {
-    if (index >= 0 && index < selectedProducts.length) {
-      const currentQuantity = selectedProducts[index].quantity;
-      if (currentQuantity > 0.25) {
-        selectedProducts[index].quantity = parseFloat(
-          (currentQuantity - 0.25).toFixed(2)
-        );
-        selectedProducts = [...selectedProducts]; // Trigger reactivity
-      }
-    }
-  }
-
-  // Direct fraction setter - ensure index is valid
-  function setQuantity(index: number, amount: number) {
-    if (index >= 0 && index < selectedProducts.length) {
-      selectedProducts[index].quantity = amount;
-      selectedProducts = [...selectedProducts]; // Trigger reactivity
-    }
-  }
-
-  // Handle input change - ensure index is valid
-  function handleInputChange(index: number, event: Event) {
-    if (index >= 0 && index < selectedProducts.length) {
-      const input = event.target as HTMLInputElement;
-      const value = parseFloat(input.value);
-
-      if (!isNaN(value) && value >= 0.25) {
-        selectedProducts[index].quantity = value;
-        selectedProducts = [...selectedProducts]; // Trigger reactivity
-      }
     }
   }
 </script>
@@ -416,12 +329,20 @@
       <p>Your daily subscription has been successfully saved.</p>
       <a href="/profile" class="btn btn-outline">View in Profile</a>
     </div>
-  {:else if selectedProducts.length > 0}
-    <form on:submit|preventDefault={handleSubmit} class="subscription-form">
+  {:else if isLoading}
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading subscription form...</p>
+    </div>
+  {:else if allProductsData.length > 0}
+    <form
+      on:submit|preventDefault={handleSubscriptionSubmit}
+      class="subscription-form"
+    >
       <div class="form-section">
         <h2>1. Select Products &amp; Delivery Days</h2>
         <div class="products-list">
-          {#each selectedProducts as product, index (product.id)}
+          {#each allProductsData as product, index (product.id)}
             <div class="product-item {product.selected ? 'is-selected' : ''}">
               <div class="product-main-row">
                 <div class="product-details">
@@ -429,6 +350,7 @@
                     type="checkbox"
                     bind:checked={product.selected}
                     id={`product-${product.id}`}
+                    on:change={updateSelectedProducts}
                   />
                   <label for={`product-${product.id}`} class="product-info">
                     <h3 class="product-name">
@@ -638,16 +560,21 @@
           {#if subscriptionLoading}
             <span class="spinner-small"></span> Processing...
           {:else}
-            {existingSubscriptionJSON
-              ? "Update Subscription"
-              : "Create Subscription"}
+            Create Subscription
           {/if}
         </button>
       </div>
     </form>
   {:else}
-    <p>Loading subscription form...</p>
+    <div class="error-container">
+      <p>Failed to load products. Please try again later.</p>
+    </div>
   {/if}
+</div>
+
+<div class="debug-section" style="display: none;">
+  <!-- Debug info if needed -->
+  <p>User: {phoneNumber || "Not logged in"}</p>
 </div>
 
 <style>
@@ -1097,5 +1024,44 @@
     font-size: 1.5rem;
     font-weight: bold;
     color: #2e7d32; /* Stronger green for the value */
+  }
+
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    text-align: center;
+  }
+
+  .spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border-left-color: #5eaa6f;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+  }
+
+  .error-container {
+    padding: 2rem;
+    text-align: center;
+    background-color: #fff3f3;
+    border: 1px solid #ffcdd2;
+    border-radius: 8px;
+    color: #d32f2f;
+    margin: 2rem 0;
+  }
+
+  /* Spinner animation */
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
 </style>
