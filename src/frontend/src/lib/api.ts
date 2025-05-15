@@ -25,6 +25,42 @@ export async function getProducts(): Promise<Product[]> {
   }
 }
 
+// Admin API functions for products
+export async function addProduct(product: Omit<Product, 'id'>): Promise<Product | null> {
+  try {
+    const payload = {
+      name: product.name,
+      unit: product.unit,
+      description: product.description,
+      price: product.price
+    };
+
+    const result = await backendActor.add_product_admin(payload);
+
+    if ('Ok' in result) {
+      const productId = Number(result.Ok);
+      return {
+        id: productId,
+        ...product
+      };
+    } else {
+      console.error("Failed to add product:", result.Err);
+      toastsStore.show({
+        text: "Failed to add product: " + result.Err,
+        level: "error",
+      });
+      return null;
+    }
+  } catch (error) {
+    console.error("Error adding product:", error);
+    toastsStore.show({
+      text: "Failed to add product",
+      level: "error",
+    });
+    return null;
+  }
+}
+
 // User Profile
 export async function getProfileByPhone(phoneNumber: string): Promise<UserProfile | null> {
   try {
