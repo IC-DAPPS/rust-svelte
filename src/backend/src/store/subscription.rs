@@ -67,6 +67,10 @@ pub fn get_subscriptions_by_phone(phone_number: &str) -> Vec<Subscription> {
     })
 }
 
+pub fn get_all_subscriptions() -> Vec<Subscription> {
+    SUBSCRIPTIONS.with(|vec| vec.borrow().iter().collect())
+}
+
 pub fn update_subscription(
     id: u64,
     mut updated_data: Subscription,

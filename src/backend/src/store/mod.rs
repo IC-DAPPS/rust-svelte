@@ -11,15 +11,16 @@ pub mod user;
 
 pub use init::{is_initialized, mark_initialized};
 pub use order::{
-    add_order, get_next_order_id, get_order, get_orders_by_phone, update_order_status,
+    add_order, get_all_orders, get_next_order_id, get_order, get_orders_by_phone,
+    update_order_status,
 };
 pub use product::{add_product, get_all_products, get_product_by_id};
 pub use subscription::{
-    add_subscription, get_active_subscriptions_due_for_order, get_subscription,
-    get_subscriptions_by_phone, update_subscription, update_subscription_next_order_date,
-    update_subscription_status,
+    add_subscription, get_active_subscriptions_due_for_order, get_all_subscriptions,
+    get_subscription, get_subscriptions_by_phone, update_subscription,
+    update_subscription_next_order_date, update_subscription_status,
 };
-pub use user::{delete_user_profile, get_user_profile, update_user_profile};
+pub use user::{delete_user_profile, get_all_user_profiles, get_user_profile, update_user_profile};
 
 // Common memory ID constants for all store modules
 use ic_stable_structures::memory_manager::MemoryId;

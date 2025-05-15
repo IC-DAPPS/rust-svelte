@@ -1,56 +1,15 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { getAllCustomers } from "$lib/api";
+  import type { UserProfile } from "$lib/types";
 
-  // Define Customer interface
-  interface Customer {
-    phone_number: string;
-    name: string;
-    email: string;
-    address: string;
-    created_at: number;
-    orders_count: number;
-    subscriptions_count: number;
+  // Define Customer interface extending UserProfile for admin display
+  interface Customer extends UserProfile {
+    email?: string; // Optional email field
+    created_at?: number; // When the user was created
+    orders_count?: number;
+    subscriptions_count?: number;
   }
-
-  // Mock customer data for demo
-  const mockCustomers: Customer[] = [
-    {
-      phone_number: "7389345065",
-      name: "Rahul Sharma",
-      email: "rahul@example.com",
-      address: "123 Main Street, Mumbai, Maharashtra",
-      created_at: Date.now() - 86400000 * 30, // 30 days ago
-      orders_count: 15,
-      subscriptions_count: 1,
-    },
-    {
-      phone_number: "9876543210",
-      name: "Priya Patel",
-      email: "priya@example.com",
-      address: "456 Park Avenue, Delhi, Delhi",
-      created_at: Date.now() - 86400000 * 15, // 15 days ago
-      orders_count: 8,
-      subscriptions_count: 1,
-    },
-    {
-      phone_number: "8765432109",
-      name: "Amit Kumar",
-      email: "amit@example.com",
-      address: "789 Garden Road, Bangalore, Karnataka",
-      created_at: Date.now() - 86400000 * 5, // 5 days ago
-      orders_count: 2,
-      subscriptions_count: 1,
-    },
-    {
-      phone_number: "9988776655",
-      name: "Sneha Gupta",
-      email: "sneha@example.com",
-      address: "234 Lake View, Chennai, Tamil Nadu",
-      created_at: Date.now() - 86400000 * 2, // 2 days ago
-      orders_count: 1,
-      subscriptions_count: 0,
-    },
-  ];
 
   let customers: Customer[] = [];
   let isLoading = true;
@@ -68,14 +27,20 @@
     loadError = false;
 
     try {
-      // In a real app, fetch customers from backend
-      // Example: customers = await getCustomers();
+      // Fetch customers from backend
+      const userData = await getAllCustomers();
 
-      // For demo, use mock data
-      setTimeout(() => {
-        customers = mockCustomers;
-        isLoading = false;
-      }, 800);
+      // Transform to Customer interface with order and subscription counts
+      // In a complete implementation, you'd fetch order and subscription counts from backend
+      customers = userData.map((user) => ({
+        ...user,
+        email: `${user.phone_number}@example.com`, // Placeholder email
+        created_at: Date.now() - Math.floor(Math.random() * 30) * 86400000, // Random date
+        orders_count: 0, // Placeholder - would fetch real data in production
+        subscriptions_count: 0, // Placeholder - would fetch real data in production
+      }));
+
+      isLoading = false;
     } catch (error) {
       console.error("Failed to load customers:", error);
       loadError = true;
@@ -100,7 +65,7 @@
     return (
       customer.phone_number.includes(query) ||
       customer.name.toLowerCase().includes(query) ||
-      customer.email.toLowerCase().includes(query) ||
+      (customer.email && customer.email.toLowerCase().includes(query)) ||
       customer.address.toLowerCase().includes(query)
     );
   });
@@ -169,11 +134,15 @@
               <tr>
                 <td>{customer.phone_number}</td>
                 <td>{customer.name}</td>
-                <td>{customer.email}</td>
+                <td>{customer.email || "N/A"}</td>
                 <td class="address-cell">{customer.address}</td>
-                <td>{formatDate(customer.created_at)}</td>
-                <td>{customer.orders_count}</td>
-                <td>{customer.subscriptions_count}</td>
+                <td
+                  >{customer.created_at
+                    ? formatDate(customer.created_at)
+                    : "N/A"}</td
+                >
+                <td>{customer.orders_count ?? 0}</td>
+                <td>{customer.subscriptions_count ?? 0}</td>
                 <td class="actions-cell">
                   <button class="action-btn view-btn">View</button>
                   <button class="action-btn orders-btn">Orders</button>
@@ -191,6 +160,7 @@
   .admin-page {
     max-width: 1200px;
     margin: 0 auto;
+    padding: 0 1rem;
   }
 
   .page-header {
@@ -236,11 +206,13 @@
 
   .customers-table-container {
     overflow-x: auto;
+    width: 100%;
   }
 
   .customers-table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 800px;
   }
 
   .customers-table th,
@@ -253,30 +225,30 @@
   .customers-table th {
     background-color: #f5f5f5;
     font-weight: 600;
+    color: #555;
   }
 
   .address-cell {
-    max-width: 200px;
+    max-width: 250px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .actions-cell {
-    display: flex;
-    gap: 0.5rem;
+    white-space: nowrap;
   }
 
   .action-btn {
     padding: 0.4rem 0.8rem;
+    margin-right: 0.4rem;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 0.9rem;
   }
 
   .view-btn {
-    background-color: #2196f3;
+    background-color: #4299e1;
     color: white;
   }
 
@@ -286,42 +258,40 @@
   }
 
   .loading-container,
-  .empty-state,
-  .error-container {
-    padding: 2rem;
+  .error-container,
+  .empty-state {
+    padding: 3rem 1rem;
     text-align: center;
+    color: #666;
   }
 
   .spinner {
     border: 4px solid rgba(0, 0, 0, 0.1);
-    border-radius: 50%;
-    border-top: 4px solid #5eaa6f;
     width: 36px;
     height: 36px;
+    border-radius: 50%;
+    border-left-color: #5eaa6f;
     animation: spin 1s linear infinite;
     margin: 0 auto 1rem;
   }
 
   .retry-btn,
   .reset-btn {
-    padding: 0.6rem 1.2rem;
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
     background-color: #5eaa6f;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    margin-top: 1rem;
   }
 
   @keyframes spin {
-    to {
-      transform: rotate(360deg);
+    0% {
+      transform: rotate(0deg);
     }
-  }
-
-  @media (max-width: 992px) {
-    .customers-table {
-      font-size: 0.9rem;
+    100% {
+      transform: rotate(360deg);
     }
   }
 
@@ -334,6 +304,15 @@
 
     .refresh-btn {
       width: 100%;
+      justify-content: center;
+    }
+
+    .admin-page {
+      padding: 0.5rem;
+    }
+
+    .customers-section {
+      padding: 1rem;
     }
   }
 </style>

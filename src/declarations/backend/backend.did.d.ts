@@ -124,6 +124,9 @@ export interface _SERVICE {
     Result_1
   >,
   'delete_profile_admin' : ActorMethod<[string], Result_4>,
+  'get_all_customers' : ActorMethod<[], Array<UserProfile>>,
+  'get_all_orders' : ActorMethod<[], Result_5>,
+  'get_all_subscriptions' : ActorMethod<[], Result_6>,
   'get_my_orders' : ActorMethod<[string], Result_5>,
   'get_my_subscriptions' : ActorMethod<[string], Result_6>,
   'get_order_details' : ActorMethod<[bigint, string], Result_7>,

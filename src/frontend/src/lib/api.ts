@@ -61,6 +61,93 @@ export async function addProduct(product: Omit<Product, 'id'>): Promise<Product 
   }
 }
 
+// Admin functions for customers
+export async function getAllCustomers(): Promise<UserProfile[]> {
+  try {
+    // Ab direct admin function ko call karenge
+    const result = await backendActor.get_all_customers();
+    
+    // Agar result mila toh use return kar denge
+    return result || [];
+    
+  } catch (error) {
+    console.error("Error fetching customers:", error);
+    toastsStore.show({
+      text: "Saare customers fetch karne mein error aaya",
+      level: "error",
+    });
+
+    // Error ke case mein empty array return karenge
+    return [];
+  }
+}
+
+// Admin functions for orders
+export async function getAllOrders(): Promise<Order[]> {
+  try {
+    // Direct admin function ko call karenge
+    const result = await backendActor.get_all_orders();
+
+    if ("Ok" in result) {
+      // Backend Order format ko frontend format mein convert karenge
+      return result.Ok.map(order => ({
+        id: Number(order.id),
+        status: order.status,
+        total_amount: Number(order.total_amount),
+        last_updated: Number(order.last_updated),
+        user_phone_number: order.user_phone_number,
+        delivery_address: order.delivery_address,
+        timestamp: Number(order.timestamp),
+        items: order.items.map(item => ({
+          product_id: Number(item.product_id),
+          quantity: Number(item.quantity),
+          price_per_unit_at_order: Number(item.price_per_unit_at_order)
+        }))
+      }));
+    } else {
+      console.log("Orders fetch karne mein error:", result.Err);
+      toastsStore.show({
+        text: `Orders fetch karne mein fail: ${result.Err}`,
+        level: "error",
+      });
+      return [];
+    }
+  } catch (error) {
+    console.error("Orders fetch karne mein error:", error);
+    toastsStore.show({
+      text: "Saare orders fetch karne mein fail",
+      level: "error",
+    });
+    throw new Error("Saare orders fetch karne mein fail");
+  }
+}
+
+// Admin functions for subscriptions
+export async function getAllSubscriptions(): Promise<Subscription[]> {
+  try {
+    // Direct admin function ko call karenge
+    const result = await backendActor.get_all_subscriptions();
+
+    if ("Ok" in result) {
+      return result.Ok.map(subscription => convertBackendSubscription(subscription));
+    } else {
+      console.log("Subscriptions fetch karne mein error:", result.Err);
+      toastsStore.show({
+        text: `Subscriptions fetch karne mein fail: ${result.Err}`,
+        level: "error",
+      });
+      return [];
+    }
+  } catch (error) {
+    console.error("Subscriptions fetch karne mein error:", error);
+    toastsStore.show({
+      text: "Saare subscriptions fetch karne mein fail",
+      level: "error",
+    });
+    throw new Error("Saare subscriptions fetch karne mein fail");
+  }
+}
+
 // User Profile
 export async function getProfileByPhone(phoneNumber: string): Promise<UserProfile | null> {
   try {

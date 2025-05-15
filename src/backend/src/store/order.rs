@@ -102,3 +102,14 @@ pub fn update_order_status(
         }
     })
 }
+
+/// Retrieves all orders for admin panel.
+pub fn get_all_orders() -> Vec<Order> {
+    ORDERS.with(|orders_map| {
+        orders_map
+            .borrow()
+            .iter()
+            .map(|(_, order)| order.clone())
+            .collect()
+    })
+}

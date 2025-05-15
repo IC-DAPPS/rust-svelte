@@ -1,79 +1,31 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { getAllSubscriptions } from "$lib/api";
+  import type { Subscription as SubscriptionType } from "$lib/types";
 
   // Define types for our data
   interface SubscriptionItem {
     product_id: number;
-    name: string;
+    name?: string;
     quantity: number;
-    price: number;
-    unit: string;
+    price?: number;
+    unit?: string;
   }
 
   interface Subscription {
-    id: bigint;
-    user_phone: string;
+    id: number | bigint;
+    user_phone_number: string;
+    user_phone?: string; // For backward compatibility with mock data
     items: SubscriptionItem[];
     delivery_days: string[];
     delivery_time_slot: string;
     delivery_address: string;
     start_date: number;
-    status: string;
+    next_order_date?: number;
+    created_at?: number;
+    updated_at?: number;
+    status: any; // Can be string or object depending on backend format
   }
-
-  // Mock subscription data for demo
-  const mockSubscriptions: Subscription[] = [
-    {
-      id: BigInt(1),
-      user_phone: "7389345065",
-      items: [
-        { product_id: 1, name: "Milk", quantity: 1, price: 70, unit: "litre" },
-      ],
-      delivery_days: ["Monday", "Wednesday", "Friday"],
-      delivery_time_slot: "Morning (6 AM - 9 AM)",
-      delivery_address: "123 Main Street, City",
-      start_date: Date.now(),
-      status: "Active",
-    },
-    {
-      id: BigInt(2),
-      user_phone: "9876543210",
-      items: [
-        { product_id: 1, name: "Milk", quantity: 2, price: 70, unit: "litre" },
-        {
-          product_id: 2,
-          name: "Paneer",
-          quantity: 0.5,
-          price: 300,
-          unit: "kg",
-        },
-      ],
-      delivery_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-      delivery_time_slot: "Evening (5 PM - 7 PM)",
-      delivery_address: "456 Park Avenue, City",
-      start_date: Date.now() - 86400000 * 10, // 10 days ago
-      status: "Active",
-    },
-    {
-      id: BigInt(3),
-      user_phone: "8765432109",
-      items: [
-        {
-          product_id: 4,
-          name: "Khatti Dahi",
-          quantity: 0.5,
-          price: 50,
-          unit: "kg",
-        },
-        { product_id: 5, name: "Matha", quantity: 1, price: 20, unit: "litre" },
-      ],
-      delivery_days: ["Saturday", "Sunday"],
-      delivery_time_slot: "Morning (6 AM - 9 AM)",
-      delivery_address: "789 Garden Road, City",
-      start_date: Date.now() - 86400000 * 5, // 5 days ago
-      status: "Paused",
-    },
-  ];
 
   let subscriptions: Subscription[] = [];
   let isLoading = true;
@@ -92,14 +44,25 @@
     loadError = false;
 
     try {
-      // In a real app, fetch subscriptions from backend
-      // Example: subscriptions = await getSubscriptions();
+      // Fetch subscriptions from backend API
+      const data = await getAllSubscriptions();
 
-      // For demo, use mock data
-      setTimeout(() => {
-        subscriptions = mockSubscriptions;
-        isLoading = false;
-      }, 800);
+      // Transform data to match our Subscription interface if needed
+      subscriptions = data.map((sub) => {
+        // Add product names if available (real implementation would fetch names)
+        return {
+          ...sub,
+          user_phone: sub.user_phone_number, // For backward compatibility
+          items: sub.items.map((item) => ({
+            ...item,
+            name: `Product #${item.product_id}`, // Placeholder, real app would fetch names
+            price: 0, // Placeholder
+            unit: "", // Placeholder
+          })),
+        };
+      });
+
+      isLoading = false;
     } catch (error) {
       console.error("Failed to load subscriptions:", error);
       loadError = true;
@@ -116,7 +79,10 @@
     });
   }
 
-  function handleStatusChange(subscriptionId: bigint, newStatus: string): void {
+  function handleStatusChange(
+    subscriptionId: bigint | number,
+    newStatus: string
+  ): void {
     // In a real app, call API to update subscription status
     console.log(
       `Updating subscription ${subscriptionId} to status: ${newStatus}`
@@ -131,27 +97,45 @@
     });
   }
 
-  function handleSelectChange(event: Event, subscriptionId: bigint): void {
+  function handleSelectChange(
+    event: Event,
+    subscriptionId: bigint | number
+  ): void {
     const target = event.target as HTMLSelectElement;
     if (target) {
       handleStatusChange(subscriptionId, target.value);
     }
   }
 
+  // Helper to get status display name - converting from backed enum format
+  function getStatusDisplayName(status: any): string {
+    if (typeof status === "object") {
+      // Handle Candid enum format like { Active: null }
+      const key = Object.keys(status)[0];
+      return key || "Unknown";
+    }
+    return status || "Unknown";
+  }
+
   // Computed for filtered subscriptions
   $: filteredSubscriptions = subscriptions.filter((sub) => {
+    const subStatus = getStatusDisplayName(sub.status);
+
     // Filter by status
-    if (filterStatus !== "All" && sub.status !== filterStatus) {
+    if (filterStatus !== "All" && subStatus !== filterStatus) {
       return false;
     }
 
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
+      const userPhone = sub.user_phone_number || sub.user_phone || "";
       return (
-        sub.user_phone.toLowerCase().includes(query) ||
+        userPhone.toLowerCase().includes(query) ||
         sub.delivery_address.toLowerCase().includes(query) ||
-        sub.items.some((item) => item.name.toLowerCase().includes(query))
+        sub.items.some((item) =>
+          (item.name || "").toLowerCase().includes(query)
+        )
       );
     }
 
@@ -228,13 +212,15 @@
           <div class="subscription-card">
             <div class="subscription-header">
               <div class="subscription-id">
-                ID: #{subscription.id.toString()}
+                ID: #{String(subscription.id)}
               </div>
               <div
-                class="subscription-status status-{subscription.status.toLowerCase()}"
+                class="subscription-status status-{getStatusDisplayName(
+                  subscription.status
+                ).toLowerCase()}"
               >
                 <select
-                  value={subscription.status}
+                  value={getStatusDisplayName(subscription.status)}
                   on:change={(e) => handleSelectChange(e, subscription.id)}
                 >
                   <option value="Active">Active</option>
@@ -247,7 +233,9 @@
             <div class="subscription-info">
               <div class="info-group">
                 <div class="info-label">Customer:</div>
-                <div class="info-value">{subscription.user_phone}</div>
+                <div class="info-value">
+                  {subscription.user_phone_number || subscription.user_phone}
+                </div>
               </div>
 
               <div class="info-group">
@@ -269,29 +257,24 @@
                 <div class="info-value">{subscription.delivery_time_slot}</div>
               </div>
 
-              <div class="info-group full-width">
+              <div class="info-group">
                 <div class="info-label">Address:</div>
-                <div class="info-value">{subscription.delivery_address}</div>
+                <div class="info-value address">
+                  {subscription.delivery_address}
+                </div>
               </div>
             </div>
 
-            <div class="subscription-items">
-              <div class="items-header">Products:</div>
-              <div class="items-list">
+            <div class="subscription-products">
+              <h3>Products:</h3>
+              <ul class="products-list">
                 {#each subscription.items as item}
-                  <div class="item">
-                    <span class="item-name">{item.name}</span>
-                    <span class="item-qty">{item.quantity} {item.unit}</span>
-                    <span class="item-price">₹{item.price * item.quantity}</span
-                    >
-                  </div>
+                  <li>
+                    {item.name || `Product #${item.product_id}`} - {item.quantity}
+                    {item.unit || ""}
+                  </li>
                 {/each}
-              </div>
-            </div>
-
-            <div class="subscription-actions">
-              <button class="action-btn view-btn">View Details</button>
-              <button class="action-btn edit-btn">Edit</button>
+              </ul>
             </div>
           </div>
         {/each}
@@ -304,6 +287,7 @@
   .admin-page {
     max-width: 1200px;
     margin: 0 auto;
+    padding: 0 1rem;
   }
 
   .page-header {
@@ -454,73 +438,14 @@
     font-size: 0.95rem;
   }
 
-  .subscription-items {
+  .subscription-products {
     padding: 1rem;
     border-bottom: 1px solid #eee;
   }
 
-  .items-header {
-    font-weight: 600;
-    margin-bottom: 0.8rem;
-    font-size: 0.95rem;
-  }
-
-  .items-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .item {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.5rem;
-    background-color: #f9f9f9;
-    border-radius: 4px;
-    font-size: 0.9rem;
-  }
-
-  .item-name {
-    flex: 2;
-    font-weight: 500;
-  }
-
-  .item-qty {
-    flex: 1;
-    text-align: center;
-  }
-
-  .item-price {
-    flex: 1;
-    text-align: right;
-    color: #5eaa6f;
-  }
-
-  .subscription-actions {
-    display: flex;
-    padding: 1rem;
-    gap: 0.8rem;
-    justify-content: flex-end;
-  }
-
-  .action-btn {
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 500;
-  }
-
-  .view-btn {
-    background-color: #f5f5f5;
-    color: #333;
-    border: 1px solid #ddd;
-  }
-
-  .edit-btn {
-    background-color: #2196f3;
-    color: white;
+  .products-list {
+    list-style: none;
+    padding: 0;
   }
 
   .loading-container,
@@ -566,10 +491,29 @@
 
     .refresh-btn {
       width: 100%;
+      justify-content: center;
+      display: flex;
     }
 
     .subscriptions-container {
       grid-template-columns: 1fr;
+    }
+
+    .filters {
+      flex-direction: column;
+    }
+
+    .status-filter {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    .admin-page {
+      padding: 0.5rem;
+    }
+
+    .subscriptions-section {
+      padding: 1rem;
     }
   }
 </style>

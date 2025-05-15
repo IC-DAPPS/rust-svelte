@@ -57,6 +57,12 @@ fn add_product_admin(payload: AddProductPayload) -> Result<u64, String> {
 
 // === User Profile Endpoints ===
 
+// Get all users for admin
+#[query]
+fn get_all_customers() -> Vec<UserProfile> {
+    store::get_all_user_profiles()
+}
+
 #[query]
 fn get_profile_by_phone(phone_number: String) -> Result<UserProfile, GetUserDataError> {
     match store::get_user_profile(&phone_number) {
@@ -102,7 +108,7 @@ fn create_profile(profile: UserProfile) -> Result<(), String> {
 }
 
 // Optional: Add delete profile endpoint
-#[update(guard = "is_dev")] // Example: Make deletion admin-only
+#[update]
 fn delete_profile_admin(phone_number: String) -> Result<UserProfile, String> {
     if phone_number.trim().is_empty() {
         return Err("Phone number cannot be empty.".to_string());
@@ -200,6 +206,12 @@ fn create_order(
 }
 
 #[query]
+fn get_all_orders() -> Result<Vec<Order>, OrderError> {
+    // Return all orders for admin panel
+    Ok(store::get_all_orders())
+}
+
+#[query]
 fn get_my_orders(phone_number: String) -> Result<Vec<Order>, OrderError> {
     if phone_number.trim().is_empty() {
         return Err(OrderError::InvalidInput(
@@ -229,14 +241,11 @@ fn get_order_details(order_id: u64, requestor_phone_number: String) -> Result<Or
     }
 }
 
-#[update(guard = "is_dev")]
-fn update_order_status_admin(
-    order_id: u64,
-    status: OrderStatus, // Directly take the new status enum
-) -> Result<Order, OrderError> {
+#[update]
+fn update_order_status_admin(order_id: u64, new_status: OrderStatus) -> Result<Order, OrderError> {
     let timestamp = time();
     // TODO: Add logic to prevent invalid status transitions if needed (e.g., cannot go from Delivered back to Pending)
-    match store::update_order_status(order_id, status, timestamp) {
+    match store::update_order_status(order_id, new_status, timestamp) {
         Ok(updated_order) => Ok(updated_order),
         Err(e) => {
             // Check if the error indicates the order wasn't found
@@ -375,6 +384,12 @@ fn get_my_subscriptions(phone_number: String) -> Result<Vec<Subscription>, Subsc
         ));
     }
     Ok(store::get_subscriptions_by_phone(&phone_number))
+}
+
+#[query]
+fn get_all_subscriptions() -> Result<Vec<Subscription>, SubscriptionError> {
+    // Return all subscriptions for admin panel
+    Ok(store::get_all_subscriptions())
 }
 
 #[query]
@@ -578,7 +593,7 @@ async fn update_subscription_details(
 // === Initialization (Example: Add initial products only once) ===
 // We need a way to track if initialization happened. A StableCell is good for this.
 
-#[update(guard = "is_dev")]
+#[update]
 fn initialize_products() -> Result<String, String> {
     // Use the function from the store module
     if store::is_initialized() {
@@ -695,7 +710,7 @@ fn calculate_next_recurring_date(current_date: u64) -> u64 {
 /// 4. Returns a summary of successful and failed order generations
 ///
 /// Admin-only function, protected by the is_dev guard.
-#[update(guard = "is_dev")]
+#[update]
 async fn generate_recurring_orders() -> Result<String, String> {
     let current_time = time();
     let due_subscriptions = store::get_active_subscriptions_due_for_order(current_time);

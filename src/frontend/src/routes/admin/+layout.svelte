@@ -6,6 +6,7 @@
   // Simple admin authentication check
   let isAuthenticated = false;
   let isLoading = true;
+  let isMobileMenuOpen = false;
 
   // Check for login page, accounting for trailing slash variation
   $: isLoginPage =
@@ -39,6 +40,16 @@
       goto("/admin/login");
     }
   });
+
+  function toggleMobileMenu() {
+    isMobileMenuOpen = !isMobileMenuOpen;
+  }
+
+  function closeMenuAfterNavigation() {
+    if (window.innerWidth <= 768) {
+      isMobileMenuOpen = false;
+    }
+  }
 </script>
 
 {#if isLoginPage}
@@ -50,24 +61,51 @@
   </div>
 {:else if isAuthenticated}
   <div class="admin-layout">
-    <aside class="admin-sidebar">
+    <div class="mobile-header">
+      <span>Kaniya Admin</span>
+      <button class="menu-toggle" on:click={toggleMobileMenu}>
+        {#if isMobileMenuOpen}
+          ❌
+        {:else}
+          ☰
+        {/if}
+      </button>
+    </div>
+
+    <aside class="admin-sidebar" class:sidebar-open={isMobileMenuOpen}>
       <div class="admin-logo">
         <h2>Kaniya Admin</h2>
       </div>
       <nav class="admin-nav">
-        <a href="/admin/products" class="nav-item">
+        <a
+          href="/admin/products"
+          class="nav-item"
+          on:click={closeMenuAfterNavigation}
+        >
           <span class="icon">📦</span>
           <span>Products</span>
         </a>
-        <a href="/admin/orders" class="nav-item">
+        <a
+          href="/admin/orders"
+          class="nav-item"
+          on:click={closeMenuAfterNavigation}
+        >
           <span class="icon">📋</span>
           <span>Orders</span>
         </a>
-        <a href="/admin/subscriptions" class="nav-item">
+        <a
+          href="/admin/subscriptions"
+          class="nav-item"
+          on:click={closeMenuAfterNavigation}
+        >
           <span class="icon">🔄</span>
           <span>Subscriptions</span>
         </a>
-        <a href="/admin/customers" class="nav-item">
+        <a
+          href="/admin/customers"
+          class="nav-item"
+          on:click={closeMenuAfterNavigation}
+        >
           <span class="icon">👥</span>
           <span>Customers</span>
         </a>
@@ -100,6 +138,29 @@
   .admin-layout {
     display: flex;
     min-height: 100vh;
+  }
+
+  .mobile-header {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background-color: #333;
+    color: #fff;
+    padding: 0 1rem;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 1000;
+  }
+
+  .menu-toggle {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
   }
 
   .admin-sidebar {
@@ -204,5 +265,34 @@
     justify-content: center;
     height: 100vh;
     background-color: #f5f5f5;
+  }
+
+  @media (max-width: 768px) {
+    .mobile-header {
+      display: flex;
+    }
+
+    .admin-layout {
+      flex-direction: column;
+      padding-top: 60px;
+    }
+
+    .admin-sidebar {
+      position: fixed;
+      top: 60px;
+      left: -250px;
+      height: calc(100vh - 60px);
+      transition: left 0.3s ease;
+      z-index: 999;
+    }
+
+    .sidebar-open {
+      left: 0;
+    }
+
+    .admin-content {
+      width: 100%;
+      padding: 1rem;
+    }
   }
 </style>

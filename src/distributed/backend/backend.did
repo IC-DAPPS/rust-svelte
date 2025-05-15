@@ -105,6 +105,9 @@ service : {
   create_profile : (UserProfile) -> (Result_3);
   create_subscription : (text, CreateSubscriptionPayload) -> (Result_1);
   delete_profile_admin : (text) -> (Result_4);
+  get_all_customers : () -> (vec UserProfile) query;
+  get_all_orders : () -> (Result_5) query;
+  get_all_subscriptions : () -> (Result_6) query;
   get_my_orders : (text) -> (Result_5) query;
   get_my_subscriptions : (text) -> (Result_6) query;
   get_order_details : (nat64, text) -> (Result_7) query;

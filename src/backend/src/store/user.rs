@@ -47,3 +47,17 @@ pub fn delete_user_profile(phone_number: &String) -> Option<UserProfile> {
     let key = StorableString(phone_number.clone());
     USER_PROFILES.with(|profiles| profiles.borrow_mut().remove(&key))
 }
+
+/// Retrieves all user profiles
+pub fn get_all_user_profiles() -> Vec<UserProfile> {
+    USER_PROFILES.with(|profiles| {
+        let map = profiles.borrow();
+        let mut result = Vec::new();
+
+        for (_, profile) in map.iter() {
+            result.push(profile);
+        }
+
+        result
+    })
+}

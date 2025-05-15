@@ -133,6 +133,9 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'delete_profile_admin' : IDL.Func([IDL.Text], [Result_4], []),
+    'get_all_customers' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
+    'get_all_orders' : IDL.Func([], [Result_5], ['query']),
+    'get_all_subscriptions' : IDL.Func([], [Result_6], ['query']),
     'get_my_orders' : IDL.Func([IDL.Text], [Result_5], ['query']),
     'get_my_subscriptions' : IDL.Func([IDL.Text], [Result_6], ['query']),
     'get_order_details' : IDL.Func(

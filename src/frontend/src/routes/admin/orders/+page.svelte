@@ -1,75 +1,18 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { getAllOrders } from "$lib/api";
   import type { Order, OrderStatus } from "$lib/types";
 
   let orders: Order[] = [];
   let isLoading = true;
   let loadError = false;
 
-  // Mock orders for demo purpose
-  // In a real app, you would fetch these from backend
-  const mockOrders = [
-    {
-      id: BigInt(1),
-      user_phone: "7389345065",
-      items: [
-        { product_id: 1, name: "Milk", quantity: 2, price: 70, unit: "litre" },
-        {
-          product_id: 2,
-          name: "Paneer",
-          quantity: 0.5,
-          price: 300,
-          unit: "kg",
-        },
-      ],
-      status: "Delivered",
-      total_amount: 290,
-      created_at: Date.now() - 86400000 * 2, // 2 days ago
-      delivery_address: "123 Main Street, City",
-    },
-    {
-      id: BigInt(2),
-      user_phone: "9876543210",
-      items: [
-        {
-          product_id: 3,
-          name: "Methi Dahi",
-          quantity: 1,
-          price: 100,
-          unit: "kg",
-        },
-        {
-          product_id: 4,
-          name: "Khatti Dahi",
-          quantity: 1,
-          price: 50,
-          unit: "kg",
-        },
-        { product_id: 5, name: "Matha", quantity: 2, price: 20, unit: "litre" },
-      ],
-      status: "Processing",
-      total_amount: 190,
-      created_at: Date.now() - 3600000 * 5, // 5 hours ago
-      delivery_address: "456 Park Avenue, City",
-    },
-    {
-      id: BigInt(3),
-      user_phone: "8765432109",
-      items: [
-        { product_id: 1, name: "Milk", quantity: 5, price: 70, unit: "litre" },
-      ],
-      status: "Placed",
-      total_amount: 350,
-      created_at: Date.now() - 1800000, // 30 minutes ago
-      delivery_address: "789 Garden Road, City",
-    },
-  ];
-
   // Status options for dropdown
-  const statusOptions: OrderStatus[] = [
-    "Placed",
+  const statusOptions = [
+    "Pending",
+    "Confirmed",
     "Processing",
-    "Out for Delivery",
+    "OutForDelivery",
     "Delivered",
     "Cancelled",
   ];
@@ -83,14 +26,9 @@
     loadError = false;
 
     try {
-      // In a real app, fetch orders from backend
-      // Example: orders = await getOrders();
-
-      // For demo, use mock orders
-      setTimeout(() => {
-        orders = mockOrders;
-        isLoading = false;
-      }, 800);
+      // Fetch orders from backend API
+      orders = await getAllOrders();
+      isLoading = false;
     } catch (error) {
       console.error("Failed to load orders:", error);
       loadError = true;
@@ -109,24 +47,43 @@
     });
   }
 
-  function handleStatusChange(orderId: bigint, newStatus: string) {
+  function handleStatusChange(orderId: number, newStatus: string) {
     // In a real app, call API to update order status
     console.log(`Updating order ${orderId} to status: ${newStatus}`);
+
+    // Format status to OrderStatus type
+    const statusObject: OrderStatus = { [newStatus]: null } as OrderStatus;
 
     // Update local state for demo
     orders = orders.map((order) => {
       if (order.id === orderId) {
-        return { ...order, status: newStatus };
+        return { ...order, status: statusObject };
       }
       return order;
     });
   }
 
-  function handleSelectChange(event: Event, orderId: bigint) {
+  function handleSelectChange(event: Event, orderId: number) {
     const target = event.target as HTMLSelectElement;
     if (target) {
       handleStatusChange(orderId, target.value);
     }
+  }
+
+  // Helper to get status display name - converting from backed enum format
+  function getStatusDisplayName(status: any): string {
+    if (typeof status === "object") {
+      // Handle Candid enum format like { Pending: null }
+      const key = Object.keys(status)[0];
+      return key || "Unknown";
+    }
+    return status || "Unknown";
+  }
+
+  // Helper to check if a status matches the current order status
+  function isCurrentStatus(orderStatus: any, statusOption: string): boolean {
+    const current = getStatusDisplayName(orderStatus);
+    return current === statusOption;
   }
 </script>
 
@@ -182,32 +139,42 @@
           <tbody>
             {#each orders as order (order.id)}
               <tr>
-                <td>#{order.id.toString()}</td>
-                <td>{order.user_phone}</td>
+                <td>#{order.id}</td>
+                <td>{order.user_phone_number}</td>
                 <td>
                   <div class="order-items">
-                    {#each order.items as item, i}
-                      <div class="order-item">
-                        {item.name} ({item.quantity}
-                        {item.unit})
-                        {#if i < order.items.length - 1},
-                        {/if}
-                      </div>
-                    {/each}
+                    {#if order.items && order.items.length > 0}
+                      {#each order.items as item, i}
+                        <div class="order-item">
+                          Product #{item.product_id} ({item.quantity})
+                          {#if i < order.items.length - 1},
+                          {/if}
+                        </div>
+                      {/each}
+                    {:else}
+                      <span>No items</span>
+                    {/if}
                   </div>
                 </td>
                 <td>₹{order.total_amount}</td>
-                <td>{formatDate(order.created_at)}</td>
+                <td>{formatDate(order.timestamp)}</td>
                 <td>
                   <select
-                    class="status-select status-{order.status
+                    class="status-select status-{getStatusDisplayName(
+                      order.status
+                    )
                       .toLowerCase()
                       .replace(/ /g, '-')}"
-                    value={order.status}
+                    value={getStatusDisplayName(order.status)}
                     on:change={(e) => handleSelectChange(e, order.id)}
                   >
                     {#each statusOptions as status}
-                      <option value={status}>{status}</option>
+                      <option
+                        value={status}
+                        selected={isCurrentStatus(order.status, status)}
+                      >
+                        {status}
+                      </option>
                     {/each}
                   </select>
                 </td>
@@ -228,6 +195,7 @@
   .admin-page {
     max-width: 1200px;
     margin: 0 auto;
+    padding: 0 1rem;
   }
 
   .page-header {
@@ -281,16 +249,19 @@
     padding: 0.6rem;
     border: 1px solid #ddd;
     border-radius: 4px;
-    width: 250px;
+    width: 100%;
+    min-width: 250px;
   }
 
   .orders-table-container {
     overflow-x: auto;
+    width: 100%;
   }
 
   .orders-table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 800px;
   }
 
   .orders-table th,
@@ -317,7 +288,8 @@
     font-size: 0.9rem;
   }
 
-  .status-placed {
+  .status-placed,
+  .status-pending {
     background-color: #e3f2fd;
     border-color: #bbdefb;
   }
@@ -327,7 +299,7 @@
     border-color: #ffecb3;
   }
 
-  .status-out-for-delivery {
+  .status-outfordelivery {
     background-color: #e8f5e9;
     border-color: #c8e6c9;
   }
@@ -427,8 +399,16 @@
       align-items: flex-start;
     }
 
-    .search-filter input {
+    .search-filter {
       width: 100%;
+    }
+
+    .admin-page {
+      padding: 0.5rem;
+    }
+
+    .orders-section {
+      padding: 1rem;
     }
   }
 </style>
