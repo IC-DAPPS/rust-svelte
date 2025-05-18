@@ -66,10 +66,10 @@ export async function getAllCustomers(): Promise<UserProfile[]> {
   try {
     // Ab direct admin function ko call karenge
     const result = await backendActor.get_all_customers();
-    
+
     // Agar result mila toh use return kar denge
     return result || [];
-    
+
   } catch (error) {
     console.error("Error fetching customers:", error);
     toastsStore.show({
@@ -569,10 +569,10 @@ function convertBackendSubscription(backendSubscription: any): Subscription {
     delivery_days: backendSubscription.delivery_days,
     delivery_time_slot: backendSubscription.delivery_time_slot,
     delivery_address: backendSubscription.delivery_address,
-    start_date: Number(backendSubscription.start_date),
+    start_date: backendSubscription.start_date ? Number(backendSubscription.start_date) / 1000000 : 0,
     status: backendSubscription.status,
-    next_order_date: Number(backendSubscription.next_order_date),
-    created_at: Number(backendSubscription.created_at),
-    updated_at: Number(backendSubscription.updated_at)
+    next_order_date: backendSubscription.next_order_date ? Number(backendSubscription.next_order_date) / 1000000 : 0,
+    created_at: backendSubscription.created_at ? Number(backendSubscription.created_at) / 1000000 : 0,
+    updated_at: backendSubscription.updated_at ? Number(backendSubscription.updated_at) / 1000000 : 0,
   };
 }

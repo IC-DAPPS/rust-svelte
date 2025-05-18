@@ -1,22 +1,21 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getAllSubscriptions } from "$lib/api";
-  import type { Subscription as SubscriptionType } from "$lib/types";
+  import { getAllSubscriptions, getProducts } from "$lib/api";
+  import type { Subscription as SubscriptionType, Product } from "$lib/types";
 
   // Define types for our data
-  interface SubscriptionItem {
+  interface DisplaySubscriptionItem {
     product_id: number;
-    name?: string;
+    name: string;
     quantity: number;
     price?: number;
     unit?: string;
   }
 
-  interface Subscription {
+  interface DisplaySubscription {
     id: number | bigint;
     user_phone_number: string;
-    user_phone?: string; // For backward compatibility with mock data
-    items: SubscriptionItem[];
+    items: DisplaySubscriptionItem[];
     delivery_days: string[];
     delivery_time_slot: string;
     delivery_address: string;
@@ -24,54 +23,79 @@
     next_order_date?: number;
     created_at?: number;
     updated_at?: number;
-    status: any; // Can be string or object depending on backend format
+    status: any;
   }
 
-  let subscriptions: Subscription[] = [];
+  let subscriptions: DisplaySubscription[] = [];
   let isLoading = true;
   let loadError = false;
+  let productMap = new Map<
+    number,
+    { name: string; price: number; unit: string }
+  >();
 
   // For filtering
   let filterStatus = "All";
   let searchQuery = "";
 
   onMount(async () => {
-    await loadSubscriptions();
+    await loadInitialData();
   });
 
-  async function loadSubscriptions() {
+  async function loadInitialData() {
     isLoading = true;
     loadError = false;
-
     try {
-      // Fetch subscriptions from backend API
-      const data = await getAllSubscriptions();
-
-      // Transform data to match our Subscription interface if needed
-      subscriptions = data.map((sub) => {
-        // Add product names if available (real implementation would fetch names)
-        return {
-          ...sub,
-          user_phone: sub.user_phone_number, // For backward compatibility
-          items: sub.items.map((item) => ({
-            ...item,
-            name: `Product #${item.product_id}`, // Placeholder, real app would fetch names
-            price: 0, // Placeholder
-            unit: "", // Placeholder
-          })),
-        };
-      });
-
-      isLoading = false;
+      // Fetch all products first to create a lookup map
+      const productsFromApi = await getProducts();
+      productMap = new Map(
+        productsFromApi.map((p) => [
+          p.id,
+          { name: p.name, price: p.price, unit: p.unit },
+        ])
+      );
+      await loadSubscriptions();
     } catch (error) {
-      console.error("Failed to load subscriptions:", error);
+      console.error(
+        "Failed to load initial data for admin subscriptions:",
+        error
+      );
       loadError = true;
+    } finally {
       isLoading = false;
     }
   }
 
-  function formatDate(timestamp: number): string {
+  async function loadSubscriptions() {
+    // isLoading is managed by loadInitialData
+    try {
+      const data = await getAllSubscriptions();
+
+      subscriptions = data.map((sub) => {
+        return {
+          ...sub,
+          items: sub.items.map((item) => {
+            const productDetails = productMap.get(item.product_id);
+            return {
+              product_id: item.product_id,
+              name: productDetails?.name || `Product #${item.product_id}`,
+              quantity: item.quantity,
+              price: productDetails?.price,
+              unit: productDetails?.unit,
+            };
+          }),
+        };
+      });
+    } catch (error) {
+      console.error("Failed to load subscriptions:", error);
+      loadError = true;
+    }
+  }
+
+  function formatDate(timestamp: number | undefined): string {
+    if (!timestamp || timestamp === 0) return "N/A";
     const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return "Invalid Date";
     return date.toLocaleDateString("en-IN", {
       year: "numeric",
       month: "short",
@@ -129,7 +153,7 @@
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      const userPhone = sub.user_phone_number || sub.user_phone || "";
+      const userPhone = sub.user_phone_number || "";
       return (
         userPhone.toLowerCase().includes(query) ||
         sub.delivery_address.toLowerCase().includes(query) ||
@@ -230,51 +254,37 @@
               </div>
             </div>
 
-            <div class="subscription-info">
-              <div class="info-group">
-                <div class="info-label">Customer:</div>
-                <div class="info-value">
-                  {subscription.user_phone_number || subscription.user_phone}
-                </div>
+            <div class="subscription-details">
+              <p><strong>Customer:</strong> {subscription.user_phone_number}</p>
+              <p>
+                <strong>Start Date:</strong>
+                {formatDate(subscription.start_date)}
+              </p>
+              <p>
+                <strong>Next Order Date:</strong>
+                {formatDate(subscription.next_order_date)}
+              </p>
+              <p>
+                <strong>Delivery Days:</strong>
+                {subscription.delivery_days.join(", ")}
+              </p>
+              <p>
+                <strong>Time Slot:</strong>
+                {subscription.delivery_time_slot}
+              </p>
+              <p><strong>Address:</strong> {subscription.delivery_address}</p>
+              <div class="products-section">
+                <strong>Products:</strong>
+                {#if subscription.items.length > 0}
+                  <ul>
+                    {#each subscription.items as item (item.product_id)}
+                      <li>{item.name} - {item.quantity} {item.unit || ""}</li>
+                    {/each}
+                  </ul>
+                {:else}
+                  <p>No items in this subscription.</p>
+                {/if}
               </div>
-
-              <div class="info-group">
-                <div class="info-label">Start Date:</div>
-                <div class="info-value">
-                  {formatDate(subscription.start_date)}
-                </div>
-              </div>
-
-              <div class="info-group">
-                <div class="info-label">Delivery Days:</div>
-                <div class="info-value">
-                  {subscription.delivery_days.join(", ")}
-                </div>
-              </div>
-
-              <div class="info-group">
-                <div class="info-label">Time Slot:</div>
-                <div class="info-value">{subscription.delivery_time_slot}</div>
-              </div>
-
-              <div class="info-group">
-                <div class="info-label">Address:</div>
-                <div class="info-value address">
-                  {subscription.delivery_address}
-                </div>
-              </div>
-            </div>
-
-            <div class="subscription-products">
-              <h3>Products:</h3>
-              <ul class="products-list">
-                {#each subscription.items as item}
-                  <li>
-                    {item.name || `Product #${item.product_id}`} - {item.quantity}
-                    {item.unit || ""}
-                  </li>
-                {/each}
-              </ul>
             </div>
           </div>
         {/each}
@@ -410,7 +420,7 @@
     font-size: 0.9rem;
   }
 
-  .subscription-info {
+  .subscription-details {
     padding: 1rem;
     display: flex;
     flex-wrap: wrap;
@@ -438,7 +448,7 @@
     font-size: 0.95rem;
   }
 
-  .subscription-products {
+  .products-section {
     padding: 1rem;
     border-bottom: 1px solid #eee;
   }
