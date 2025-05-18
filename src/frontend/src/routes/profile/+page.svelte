@@ -1,6 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getProfileByPhone, createProfile, updateProfile } from "$lib/api";
+  import {
+    getProfileByPhone,
+    createProfile,
+    updateProfile,
+    getMySubscriptions,
+  } from "$lib/api";
   import type { UserProfile } from "$lib/types";
 
   let phoneNumber = "";
@@ -46,6 +51,8 @@
         // Reset subscription state if parsing fails
         hasActiveSubscription = false;
         subscriptionData = null;
+        // Remove invalid data from localStorage
+        localStorage.removeItem("userSubscription");
       }
     } else {
       // Explicitly reset if no subscription found
@@ -65,13 +72,19 @@
             .join(", ")
         : "N/A";
 
-    // Format Dates (e.g., 15/12/2024 - 14/01/2025) - Add checks
-    const startDateStr = subscriptionData.startDate
-      ? new Date(subscriptionData.startDate).toLocaleDateString()
-      : "N/A";
-    const endDateStr = subscriptionData.endDate
-      ? new Date(subscriptionData.endDate).toLocaleDateString()
-      : "N/A";
+    // Format Dates - Make sure we're handling timestamps correctly
+    const startDate = new Date(subscriptionData.startDate);
+    const endDate = new Date(subscriptionData.endDate);
+
+    // Check if dates are valid before formatting
+    const startDateStr = !isNaN(startDate.getTime())
+      ? startDate.toLocaleDateString()
+      : "Invalid Date";
+
+    const endDateStr = !isNaN(endDate.getTime())
+      ? endDate.toLocaleDateString()
+      : "Invalid Date";
+
     formattedSubscriptionDates = `${startDateStr} - ${endDateStr}`;
 
     // Format Total Cost (e.g., ₹1234.50) - Check remains same
@@ -110,19 +123,37 @@
   async function loadProfile() {
     loading = true;
     message = "";
-
     try {
       profile = await getProfileByPhone(phoneNumber);
-
       if (profile) {
         name = profile.name;
         address = profile.address;
-      }
 
-      loading = false;
-    } catch (err) {
-      console.error("Failed to load profile:", err);
-      message = "Failed to load profile. Please try again.";
+        // Check if user has any active subscriptions in backend
+        try {
+          const userSubscriptions = await getMySubscriptions(phoneNumber);
+
+          // If backend has no subscriptions but localStorage has subscription data,
+          // clear localStorage data to prevent stale data display
+          if (
+            userSubscriptions.length === 0 &&
+            localStorage.getItem("userSubscription")
+          ) {
+            console.log(
+              "Backend has no subscriptions but localStorage has data - clearing stale data"
+            );
+            localStorage.removeItem("userSubscription");
+            hasActiveSubscription = false;
+            subscriptionData = null;
+          }
+        } catch (err) {
+          console.error("Failed to verify backend subscriptions:", err);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading profile:", error);
+      message = "Failed to load profile";
+    } finally {
       loading = false;
     }
   }
@@ -263,6 +294,14 @@
               <button
                 class="btn btn-danger btn-sm unsubscribe-btn"
                 on:click={handleUnsubscribe}>Unsubscribe</button
+              >
+              <!-- Add Refresh button -->
+              <button
+                class="btn btn-outline btn-sm refresh-btn"
+                on:click={() => {
+                  loadProfile();
+                  checkForSubscription();
+                }}>Refresh Data</button
               >
             </div>
           </div>
@@ -623,5 +662,17 @@
   /* Add margin to unsubscribe button */
   .unsubscribe-btn {
     margin-left: 0.5rem; /* Add space between buttons */
+  }
+
+  /* Add styles for refresh button */
+  .refresh-btn {
+    margin-left: 0.5rem;
+    background-color: #f8f9fa;
+    border-color: #ddd;
+  }
+
+  .refresh-btn:hover {
+    background-color: #e2e6ea;
+    border-color: #ccc;
   }
 </style>

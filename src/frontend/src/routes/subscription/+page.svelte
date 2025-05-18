@@ -1,11 +1,21 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getProfile, getProducts, createSubscription } from "$lib/api";
+  import {
+    getProfile,
+    getProducts,
+    createSubscription,
+    getMySubscriptions,
+  } from "$lib/api";
   import {
     subscriptionStore,
     subscriptionCounts,
   } from "$lib/stores/subscription";
-  import type { UserProfile, Product } from "$lib/types";
+  import type {
+    UserProfile,
+    Product,
+    Subscription,
+    SubscriptionItem,
+  } from "$lib/types";
 
   // Helper function to calculate days between two dates
   function daysBetween(date1: string, date2: string): number {
@@ -167,30 +177,22 @@
     // Set default dates
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    startDate = tomorrow.toISOString().split("T")[0];
+    let defaultStartDate = tomorrow.toISOString().split("T")[0];
 
     const oneMonthLater = new Date(tomorrow);
     oneMonthLater.setDate(oneMonthLater.getDate() + 30);
-    endDate = oneMonthLater.toISOString().split("T")[0];
+    let defaultEndDate = oneMonthLater.toISOString().split("T")[0];
 
     // Load user profile
     try {
       isLoading = true;
-      // For demo, use a hardcoded phone number or get from localStorage
       phoneNumber = localStorage.getItem("userPhoneNumber") || "7389345065"; // Default for testing
       userProfile = await getProfile(phoneNumber);
       isLoggedIn = !!userProfile;
 
-      if (isLoggedIn) {
-        // Load user's subscriptions
-        await subscriptionStore.loadSubscriptions(phoneNumber);
-      }
-
-      // Load products from backend API
-      const products = await getProducts();
-
-      // Map backend products to subscription product format
-      allProductsData = products.map((p) => ({
+      // Load all available products first
+      const productsFromApi = await getProducts();
+      allProductsData = productsFromApi.map((p) => ({
         id: BigInt(p.id),
         name: p.name,
         description: p.description,
@@ -202,10 +204,107 @@
         deliveryDays: defaultProductDeliveryDays(),
       }));
 
-      // Initially nothing is selected
-      updateSelectedProducts();
+      if (isLoggedIn) {
+        await subscriptionStore.loadSubscriptions(phoneNumber);
+
+        // Check for an active subscription from the store to pre-fill the form
+        let currentSubscriptions: Subscription[] = [];
+        const unsubscribe = subscriptionStore.subscribe((value) => {
+          currentSubscriptions = value;
+        });
+        unsubscribe(); // Unsubscribe immediately after getting the current value
+
+        const activeSub = currentSubscriptions.find(
+          (sub) => sub.status && "Active" in sub.status
+        );
+
+        if (activeSub) {
+          console.log(
+            "Active subscription found, pre-filling form:",
+            activeSub
+          );
+
+          // Pre-fill dates
+          startDate = new Date(Number(activeSub.start_date) / 1000000)
+            .toISOString()
+            .split("T")[0];
+          // If backend provides next_order_date and it's meaningful as an end_date or for period calculation
+          // For now, let's assume a 30 day period from start if no explicit end date is stored with subscription
+          // The localStorage object has an 'endDate' we can use if it was set.
+          const localSubData = JSON.parse(
+            localStorage.getItem("userSubscription") || "{}"
+          );
+          if (
+            localSubData &&
+            localSubData.id === activeSub.id &&
+            localSubData.endDate
+          ) {
+            endDate = new Date(localSubData.endDate)
+              .toISOString()
+              .split("T")[0];
+          } else {
+            // Default to 30 days from activeSub's start_date if not in localStorage
+            const activeStartDate = new Date(
+              Number(activeSub.start_date) / 1000000
+            );
+            const calculatedEndDate = new Date(activeStartDate);
+            calculatedEndDate.setDate(activeStartDate.getDate() + 30);
+            endDate = calculatedEndDate.toISOString().split("T")[0];
+          }
+
+          // Pre-fill preferred time
+          if (activeSub.delivery_time_slot.toLowerCase().includes("morning")) {
+            preferredTime = "morning";
+          } else if (
+            activeSub.delivery_time_slot.toLowerCase().includes("evening")
+          ) {
+            preferredTime = "evening";
+          }
+
+          // Pre-fill products and their quantities & delivery days
+          allProductsData = allProductsData.map((p) => {
+            const subItem = activeSub.items.find(
+              (item: SubscriptionItem) =>
+                Number(item.product_id) === Number(p.id)
+            );
+            if (subItem) {
+              const newDeliveryDays = { ...defaultProductDeliveryDays() };
+              activeSub.delivery_days.forEach((day: string) => {
+                const dayKey = day.toLowerCase();
+                if (dayKey in newDeliveryDays) {
+                  (newDeliveryDays as any)[dayKey] = true;
+                }
+              });
+              return {
+                ...p,
+                selected: true,
+                quantity: Number(subItem.quantity),
+                deliveryDays: newDeliveryDays,
+              };
+            }
+            return p;
+          });
+
+          message =
+            "Editing your active subscription. Make changes and click 'Update Subscription'.";
+          // We might need a different button text or an update flag later
+        } else {
+          // No active subscription, set default dates for new subscription
+          startDate = defaultStartDate;
+          endDate = defaultEndDate;
+        }
+      } else {
+        // Not logged in, set default dates
+        startDate = defaultStartDate;
+        endDate = defaultEndDate;
+      }
+
+      updateSelectedProducts(); // Ensure selectedProducts array is updated
     } catch (error) {
       console.error("Error initializing subscription page:", error);
+      // Set default dates even on error to ensure form is usable
+      startDate = defaultStartDate;
+      endDate = defaultEndDate;
     } finally {
       isLoading = false;
     }
@@ -225,7 +324,7 @@
   // Handle form submission
   async function handleSubscriptionSubmit() {
     if (!isLoggedIn || !userProfile) {
-      message = "Please log in to create a subscription";
+      message = "Please log in to create or update a subscription";
       subscriptionError = true;
       return;
     }
@@ -278,13 +377,44 @@
         start_date: new Date(startDate).getTime() * 1000000, // Convert to nanoseconds for backend
       };
 
-      // Call backend API
+      // Call backend API - TODO: Differentiate between create and update
+      // For now, this will always call createSubscription.
+      // We need to check if an activeSub exists and then call an updateSubscription API
       const result = await createSubscription(phoneNumber, payload);
 
       if (result) {
         subscriptionSuccess = true;
         subscriptionStore.addSubscription(result);
         message = "Subscription created successfully!";
+
+        // Save subscription data to localStorage for profile page
+        // Create a simplified version with just the needed fields for display
+        const subscriptionForLocalStorage = {
+          id: result.id,
+          status: result.status,
+          preferredTime: preferredTime,
+          startDate: new Date(startDate).getTime(), // Already in milliseconds
+          // Either use end date from form or calculate it from start date
+          endDate: endDate
+            ? new Date(endDate).getTime()
+            : new Date(startDate).getTime() + 30 * 24 * 60 * 60 * 1000,
+          products: validProducts.map((p) => ({
+            name: p.name, // Use actual product name from form
+            quantity: p.quantity,
+          })),
+          // Calculate estimated cost
+          totalCost: totalEstimatedSubscriptionCost,
+        };
+
+        // Log the data we're saving to localStorage for debugging
+        console.log(
+          "Saving subscription to localStorage:",
+          subscriptionForLocalStorage
+        );
+        localStorage.setItem(
+          "userSubscription",
+          JSON.stringify(subscriptionForLocalStorage)
+        );
 
         // Reset form
         selectedProducts = [];
@@ -313,10 +443,17 @@
 </svelte:head>
 
 <div class="subscription-page container">
-  <h1>Daily Subscription</h1>
-  <p class="intro-text">
-    Setup regular delivery of your favorite dairy products
-  </p>
+  {#if isLoggedIn && message.startsWith("Editing")}
+    <h1>Manage Your Subscription</h1>
+    <p class="intro-text">
+      View or update your active subscription details below.
+    </p>
+  {:else}
+    <h1>Daily Subscription</h1>
+    <p class="intro-text">
+      Setup regular delivery of your favorite dairy products
+    </p>
+  {/if}
 
   {#if !isLoggedIn}
     <div class="login-required">
@@ -560,6 +697,7 @@
           {#if subscriptionLoading}
             <span class="spinner-small"></span> Processing...
           {:else}
+            <!-- TODO: Change button text if editing -->
             Create Subscription
           {/if}
         </button>

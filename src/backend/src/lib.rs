@@ -334,10 +334,21 @@ async fn create_subscription(
         ));
     }
 
+    // 2. Check if user profile exists
     if store::get_user_profile(&phone_number).is_none() {
         return Err(SubscriptionError::UserProfileNotFound);
     }
 
+    // 3. Check if user already has an active subscription
+    let existing_subscriptions = store::get_subscriptions_by_phone(&phone_number);
+    if existing_subscriptions
+        .iter()
+        .any(|sub| sub.status == SubscriptionStatus::Active)
+    {
+        return Err(SubscriptionError::AlreadyExists);
+    }
+
+    // 4. Validate subscription items and product existence
     let mut subscription_items: Vec<models::SubscriptionItem> = Vec::new();
     for item_input in payload.items {
         if item_input.quantity <= 0.0 {
@@ -355,13 +366,14 @@ async fn create_subscription(
         });
     }
 
+    // 5. Prepare subscription data
     let current_time = time();
     let calculated_next_order_date =
         calculate_initial_next_order_date(payload.start_date, &payload.delivery_days);
 
     let subscription_to_create = Subscription {
-        id: 0, // Placeholder, will be set by store
-        user_phone_number: phone_number,
+        id: 0,                           // Placeholder, will be set by store
+        user_phone_number: phone_number, // Already cloned if needed by this point
         items: subscription_items,
         delivery_days: payload.delivery_days,
         delivery_time_slot: payload.delivery_time_slot,
@@ -373,6 +385,7 @@ async fn create_subscription(
         updated_at: current_time,
     };
 
+    // 6. Add subscription to store
     store::add_subscription(subscription_to_create).map_err(|e| SubscriptionError::StorageError(e))
 }
 
