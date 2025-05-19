@@ -357,12 +357,16 @@ async fn create_subscription(
                 item_input.quantity, item_input.product_id
             )));
         }
-        if store::get_product_by_id(item_input.product_id).is_none() {
-            return Err(SubscriptionError::ProductNotFound(item_input.product_id));
-        }
+        // Fetch the product to get its current price
+        let product = match store::get_product_by_id(item_input.product_id) {
+            Some(p) => p,
+            None => return Err(SubscriptionError::ProductNotFound(item_input.product_id)),
+        };
+
         subscription_items.push(models::SubscriptionItem {
             product_id: item_input.product_id,
             quantity: item_input.quantity,
+            price_per_unit_at_subscription: product.price, // Store current price
         });
     }
 
@@ -539,12 +543,17 @@ async fn update_subscription_details(
                             item_input.quantity, item_input.product_id
                         )));
                     }
-                    if store::get_product_by_id(item_input.product_id).is_none() {
-                        return Err(SubscriptionError::ProductNotFound(item_input.product_id));
-                    }
+                    // Fetch the product to get its current price
+                    let product = match store::get_product_by_id(item_input.product_id) {
+                        Some(p) => p,
+                        None => {
+                            return Err(SubscriptionError::ProductNotFound(item_input.product_id))
+                        }
+                    };
                     new_subscription_items.push(models::SubscriptionItem {
                         product_id: item_input.product_id,
                         quantity: item_input.quantity,
+                        price_per_unit_at_subscription: product.price, // Store current price
                     });
                 }
                 subscription.items = new_subscription_items;

@@ -5,8 +5,10 @@
     createProfile,
     updateProfile,
     getMySubscriptions,
+    getMyOrders,
+    getProducts,
   } from "$lib/api";
-  import type { UserProfile } from "$lib/types";
+  import type { UserProfile, Order, Product } from "$lib/types";
 
   let phoneNumber = "";
   let profile: UserProfile | null = null;
@@ -28,6 +30,11 @@
   let formattedSubscriptionDates = "";
   let formattedTotalCost = "";
 
+  let orders: Order[] = [];
+  let currentOrder: Order | null = null;
+  let ordersLoading = false;
+  let productMap: Map<number, string> = new Map();
+
   onMount(() => {
     // Check if user is already logged in via localStorage
     const storedPhoneNumber = localStorage.getItem("userPhoneNumber");
@@ -36,6 +43,7 @@
       isLoggedIn = true;
       loadProfile();
       checkForSubscription();
+      loadProductsAndOrders();
     }
   });
 
@@ -102,6 +110,7 @@
       isLoggedIn = true;
       loadProfile();
       checkForSubscription();
+      loadProductsAndOrders();
     }
   }
 
@@ -155,6 +164,43 @@
       message = "Failed to load profile";
     } finally {
       loading = false;
+    }
+  }
+
+  async function loadProductsAndOrders() {
+    ordersLoading = true;
+    try {
+      // Fetch products and create a map for product_id -> name
+      const products = await getProducts();
+      productMap = new Map(products.map((p) => [p.id, p.name]));
+      await loadOrders();
+    } catch (error) {
+      console.error(
+        "Failed to load products or orders for profile page:",
+        error
+      );
+      currentOrder = null;
+    } finally {
+      ordersLoading = false;
+    }
+  }
+
+  async function loadOrders() {
+    try {
+      const allOrders = await getMyOrders(phoneNumber);
+      orders = allOrders;
+      // Filter for active orders (Pending, Processing, OutForDelivery)
+      currentOrder =
+        orders.find(
+          (order) =>
+            order.status &&
+            ("Pending" in order.status ||
+              "Processing" in order.status ||
+              "OutForDelivery" in order.status)
+        ) || null;
+    } catch (error) {
+      console.error("Failed to load orders for profile page:", error);
+      currentOrder = null;
     }
   }
 
@@ -312,6 +358,49 @@
               >Setup Daily Delivery</a
             >
           </div>
+        {/if}
+      </div>
+
+      <!-- Add current order section below subscription section -->
+      <div class="info-section">
+        <h3>Current Order</h3>
+        {#if ordersLoading}
+          <p>Loading current order...</p>
+        {:else if currentOrder}
+          <div class="order-card">
+            <div><strong>Order ID:</strong> #{currentOrder.id}</div>
+            <div>
+              <strong>Status:</strong>
+              {Object.keys(currentOrder.status)[0]}
+            </div>
+            <div>
+              <strong>Placed On:</strong>
+              {currentOrder.timestamp
+                ? new Date(currentOrder.timestamp / 1000000).toLocaleString()
+                : "N/A"}
+            </div>
+            <div>
+              <strong>Delivery Address:</strong>
+              {currentOrder.delivery_address}
+            </div>
+            <div>
+              <strong>Order Items:</strong>
+              <ul>
+                {#each currentOrder.items as item}
+                  <li>
+                    {productMap.get(item.product_id) ||
+                      `Product ${item.product_id}`} - Quantity: {item.quantity},
+                    Price: ₹{item.price_per_unit_at_order}
+                  </li>
+                {/each}
+              </ul>
+            </div>
+            <div>
+              <strong>Total:</strong> ₹{currentOrder.total_amount.toFixed(2)}
+            </div>
+          </div>
+        {:else}
+          <p>No active order.</p>
         {/if}
       </div>
 
@@ -674,5 +763,18 @@
   .refresh-btn:hover {
     background-color: #e2e6ea;
     border-color: #ccc;
+  }
+
+  .order-card {
+    background: #f8f9fa;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .order-card ul {
+    margin: 0.5rem 0 0 1rem;
+    padding: 0;
   }
 </style>

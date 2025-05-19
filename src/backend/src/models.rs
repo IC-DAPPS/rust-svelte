@@ -75,12 +75,11 @@ impl Default for SubscriptionStatus {
     }
 }
 
-#[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
+#[derive(CandidType, Deserialize, Serialize, Clone, Debug, Default)]
 pub struct SubscriptionItem {
     pub product_id: u64,
     pub quantity: f64,
-    // We might consider adding price_per_unit_at_subscription_start if prices can fluctuate
-    // and subscriptions should lock in a price. For now, orders will use current product price.
+    pub price_per_unit_at_subscription: f64, // New field
 }
 
 #[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
