@@ -9,6 +9,8 @@
   let isMobileMenuOpen = false;
 
   // Check for login page, accounting for trailing slash variation
+  $: currentPath = $page.url.pathname;
+
   $: isLoginPage =
     $page.url.pathname === "/admin/login" ||
     $page.url.pathname === "/admin/login/";
@@ -79,7 +81,9 @@
       <nav class="admin-nav">
         <a
           href="/admin/products"
-          class="nav-item"
+          class="nav-item {currentPath.startsWith('/admin/products')
+            ? 'active'
+            : ''}"
           on:click={closeMenuAfterNavigation}
         >
           <span class="icon">📦</span>
@@ -87,7 +91,9 @@
         </a>
         <a
           href="/admin/orders"
-          class="nav-item"
+          class="nav-item {currentPath.startsWith('/admin/orders')
+            ? 'active'
+            : ''}"
           on:click={closeMenuAfterNavigation}
         >
           <span class="icon">📋</span>
@@ -95,7 +101,9 @@
         </a>
         <a
           href="/admin/subscriptions"
-          class="nav-item"
+          class="nav-item {currentPath.startsWith('/admin/subscriptions')
+            ? 'active'
+            : ''}"
           on:click={closeMenuAfterNavigation}
         >
           <span class="icon">🔄</span>
@@ -103,7 +111,9 @@
         </a>
         <a
           href="/admin/customers"
-          class="nav-item"
+          class="nav-item {currentPath.startsWith('/admin/customers')
+            ? 'active'
+            : ''}"
           on:click={closeMenuAfterNavigation}
         >
           <span class="icon">👥</span>
@@ -294,5 +304,12 @@
       width: 100%;
       padding: 1rem;
     }
+  }
+
+  .nav-item.active {
+    background-color: #e8f5e9;
+    color: #388e3c;
+    font-weight: bold;
+    border-left: 4px solid #5eaa6f;
   }
 </style>

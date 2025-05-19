@@ -10,6 +10,7 @@
     quantity: number;
     price?: number;
     unit?: string;
+    // deliveryDays?: string[]; // Uncomment if you add per-product days in backend
   }
 
   interface DisplaySubscription {
@@ -141,6 +142,22 @@
     return status || "Unknown";
   }
 
+  function getStatusColor(status: any): string {
+    const key = getStatusDisplayName(status).toLowerCase();
+    if (key === "active") return "#e8f5e9";
+    if (key === "paused") return "#fff8e1";
+    if (key === "cancelled") return "#ffebee";
+    return "#f5f5f5";
+  }
+
+  function getStatusTextColor(status: any): string {
+    const key = getStatusDisplayName(status).toLowerCase();
+    if (key === "active") return "#388e3c";
+    if (key === "paused") return "#fbc02d";
+    if (key === "cancelled") return "#d32f2f";
+    return "#333";
+  }
+
   // Computed for filtered subscriptions
   $: filteredSubscriptions = subscriptions.filter((sub) => {
     const subStatus = getStatusDisplayName(sub.status);
@@ -233,15 +250,21 @@
     {:else}
       <div class="subscriptions-container">
         {#each filteredSubscriptions as subscription (subscription.id)}
-          <div class="subscription-card">
+          <div
+            class="subscription-card"
+            style="background: {getStatusColor(subscription.status)};"
+          >
             <div class="subscription-header">
               <div class="subscription-id">
-                ID: #{String(subscription.id)}
+                <span style="font-size:1.1em;"
+                  >ID: #{String(subscription.id)}</span
+                >
               </div>
               <div
-                class="subscription-status status-{getStatusDisplayName(
+                class="subscription-status"
+                style="color: {getStatusTextColor(
                   subscription.status
-                ).toLowerCase()}"
+                )}; font-weight:bold;"
               >
                 <select
                   value={getStatusDisplayName(subscription.status)}
@@ -255,30 +278,52 @@
             </div>
 
             <div class="subscription-details">
-              <p><strong>Customer:</strong> {subscription.user_phone_number}</p>
               <p>
-                <strong>Start Date:</strong>
+                <span class="icon">📞</span> <strong>Customer:</strong>
+                <a href={`tel:${subscription.user_phone_number}`}
+                  >{subscription.user_phone_number}</a
+                >
+              </p>
+              <p>
+                <span class="icon">📅</span> <strong>Start Date:</strong>
                 {formatDate(subscription.start_date)}
               </p>
               <p>
-                <strong>Next Order Date:</strong>
+                <span class="icon">⏭️</span> <strong>Next Order Date:</strong>
                 {formatDate(subscription.next_order_date)}
               </p>
               <p>
-                <strong>Delivery Days:</strong>
+                <span class="icon">🗓️</span> <strong>Delivery Days:</strong>
                 {subscription.delivery_days.join(", ")}
               </p>
               <p>
-                <strong>Time Slot:</strong>
+                <span class="icon">⏰</span> <strong>Time Slot:</strong>
                 {subscription.delivery_time_slot}
               </p>
-              <p><strong>Address:</strong> {subscription.delivery_address}</p>
+              <p>
+                <span class="icon">📍</span> <strong>Address:</strong>
+                <a
+                  href={`https://maps.google.com/?q=${encodeURIComponent(subscription.delivery_address)}`}
+                  target="_blank">{subscription.delivery_address}</a
+                >
+              </p>
+              <p>
+                <span class="icon">🆔</span> <strong>Created:</strong>
+                {formatDate(subscription.created_at)} |
+                <strong>Updated:</strong>
+                {formatDate(subscription.updated_at)}
+              </p>
               <div class="products-section">
                 <strong>Products:</strong>
                 {#if subscription.items.length > 0}
                   <ul>
                     {#each subscription.items as item (item.product_id)}
-                      <li>{item.name} - {item.quantity} {item.unit || ""}</li>
+                      <li>
+                        <span class="icon">🥛</span>
+                        {item.name} - {item.quantity}
+                        {item.unit || ""}
+                        <!-- If you add per-product days in backend, show here: (Days: {item.deliveryDays?.join(', ')}) -->
+                      </li>
                     {/each}
                   </ul>
                 {:else}
@@ -370,10 +415,11 @@
   }
 
   .subscription-card {
-    border: 1px solid #eee;
+    margin-bottom: 1.5rem;
     border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+    border: 1px solid #e0e0e0;
     overflow: hidden;
-    background-color: #fafafa;
   }
 
   .subscription-header {
@@ -381,7 +427,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 1rem;
-    background-color: #f5f5f5;
+    background: #f5f5f5;
     border-bottom: 1px solid #eee;
   }
 
@@ -422,10 +468,11 @@
 
   .subscription-details {
     padding: 1rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.8rem;
-    border-bottom: 1px solid #eee;
+    font-size: 1.05em;
+  }
+
+  .subscription-details .icon {
+    margin-right: 0.3em;
   }
 
   .info-group {
@@ -449,8 +496,10 @@
   }
 
   .products-section {
-    padding: 1rem;
-    border-bottom: 1px solid #eee;
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background: #f8f8f8;
+    border-radius: 6px;
   }
 
   .products-list {
