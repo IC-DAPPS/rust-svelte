@@ -26,6 +26,10 @@ async function setupActor(): Promise<ActorSubclass<_SERVICE>> {
   const actor = Actor.createActor<_SERVICE>(idlFactory, {
     canisterId,
     agent,
+    callTransform: (args) => {
+      console.log("callTransform - Original args:", JSON.stringify(args));
+      return args;
+    },
   });
 
   return actor;

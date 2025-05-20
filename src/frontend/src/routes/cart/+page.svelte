@@ -87,6 +87,7 @@
           phone_number: phoneNumber,
           name: "Customer", // Default name, user can update later
           address: address,
+          order_ids: [], // Add empty order_ids array
         };
 
         const profileCreated = await createProfile(newProfile);

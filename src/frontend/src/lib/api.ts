@@ -155,7 +155,21 @@ export async function getProfile(phoneNumber: string): Promise<UserProfile | nul
 
 export async function createProfile(profile: UserProfile): Promise<boolean> {
   try {
-    const result = await backendActor.create_profile(profile);
+    // Deep clone to ensure we don't modify the original
+    const profileToSend = {
+      name: profile.name,
+      address: profile.address,
+      phone_number: profile.phone_number,
+      order_ids: Array.isArray(profile.order_ids) ? [...profile.order_ids] : []
+    };
+
+    console.log("Creating profile with data:", JSON.stringify(profileToSend));
+    console.log("order_ids type:", Array.isArray(profileToSend.order_ids) ? "Array" : typeof profileToSend.order_ids);
+    console.log("order_ids value:", profileToSend.order_ids);
+
+    const result = await backendActor.create_profile(profileToSend);
+    console.log("Backend create_profile result:", result);
+
     if ("Ok" in result) {
       toastsStore.show({
         text: "Profile created successfully",
@@ -163,6 +177,7 @@ export async function createProfile(profile: UserProfile): Promise<boolean> {
       });
       return true;
     } else {
+      console.error("Backend returned error:", result.Err);
       toastsStore.show({
         text: `Failed to create profile: ${result.Err}`,
         level: "error",
@@ -170,6 +185,7 @@ export async function createProfile(profile: UserProfile): Promise<boolean> {
       return false;
     }
   } catch (error) {
+    console.error("Exception in createProfile:", error);
     toastsStore.show({
       text: "Failed to create profile",
       level: "error",

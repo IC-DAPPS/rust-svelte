@@ -4,13 +4,6 @@ type AddProductPayload = record {
   description : text;
   price : float64;
 };
-type CreateSubscriptionPayload = record {
-  delivery_days : vec text;
-  start_date : nat64;
-  delivery_address : text;
-  items : vec OrderItemInput;
-  delivery_time_slot : text;
-};
 type GetUserDataError = variant {
   FailedToAddToList;
   DidntFindUserData;
@@ -56,73 +49,33 @@ type Product = record {
   price : float64;
 };
 type Result = variant { Ok : nat64; Err : text };
-type Result_1 = variant { Ok : Subscription; Err : SubscriptionError };
-type Result_10 = variant { Ok; Err : GetUserDataError };
-type Result_2 = variant { Ok : nat64; Err : OrderError };
-type Result_3 = variant { Ok; Err : text };
-type Result_4 = variant { Ok : UserProfile; Err : text };
-type Result_5 = variant { Ok : vec Order; Err : OrderError };
-type Result_6 = variant { Ok : vec Subscription; Err : SubscriptionError };
-type Result_7 = variant { Ok : Order; Err : OrderError };
-type Result_8 = variant { Ok : UserProfile; Err : GetUserDataError };
-type Result_9 = variant { Ok : text; Err : text };
-type Subscription = record {
-  id : nat64;
-  status : SubscriptionStatus;
-  updated_at : nat64;
-  delivery_days : vec text;
-  created_at : nat64;
-  user_phone_number : text;
-  start_date : nat64;
-  delivery_address : text;
-  next_order_date : nat64;
-  items : vec OrderItemInput;
-  delivery_time_slot : text;
+type Result_1 = variant { Ok : nat64; Err : OrderError };
+type Result_2 = variant { Ok; Err : text };
+type Result_3 = variant { Ok : UserProfile; Err : text };
+type Result_4 = variant { Ok : vec Order; Err : OrderError };
+type Result_5 = variant { Ok : Order; Err : OrderError };
+type Result_6 = variant { Ok : UserProfile; Err : GetUserDataError };
+type Result_7 = variant { Ok : text; Err : text };
+type Result_8 = variant { Ok; Err : GetUserDataError };
+type UserProfile = record {
+  name : text;
+  order_ids : vec nat64;
+  address : text;
+  phone_number : text;
 };
-type SubscriptionError = variant {
-  AccessDenied;
-  InvalidInput : text;
-  SubscriptionNotFound;
-  ProductNotFound : nat64;
-  AlreadyExists;
-  UserProfileNotFound;
-  UpdateFailed : text;
-  StorageError : text;
-};
-type SubscriptionItem = record { product_id : nat64; quantity : float64 };
-type SubscriptionStatus = variant { Paused; Active; Cancelled };
-type UpdateSubscriptionDetailsPayload = record {
-  delivery_days : opt vec text;
-  delivery_address : opt text;
-  items : opt vec OrderItemInput;
-  delivery_time_slot : opt text;
-};
-type UserProfile = record { name : text; address : text; phone_number : text };
 service : {
   add_product_admin : (AddProductPayload) -> (Result);
-  cancel_subscription : (nat64, text) -> (Result_1);
-  create_order : (text, vec OrderItemInput, text) -> (Result_2);
-  create_profile : (UserProfile) -> (Result_3);
-  create_subscription : (text, CreateSubscriptionPayload) -> (Result_1);
-  delete_profile_admin : (text) -> (Result_4);
+  create_order : (text, vec OrderItemInput, text) -> (Result_1);
+  create_profile : (UserProfile) -> (Result_2);
+  delete_profile_admin : (text) -> (Result_3);
   get_all_customers : () -> (vec UserProfile) query;
-  get_all_orders : () -> (Result_5) query;
-  get_all_subscriptions : () -> (Result_6) query;
-  get_my_orders : (text) -> (Result_5) query;
-  get_my_subscriptions : (text) -> (Result_6) query;
-  get_order_details : (nat64, text) -> (Result_7) query;
+  get_all_orders : () -> (Result_4) query;
+  get_my_orders : (text) -> (Result_4) query;
+  get_order_details : (nat64, text) -> (Result_5) query;
   get_products : () -> (vec Product) query;
-  get_profile_by_phone : (text) -> (Result_8) query;
-  get_subscription_details : (nat64, text) -> (Result_1) query;
-  initialize_products : () -> (Result_9);
+  get_profile_by_phone : (text) -> (Result_6) query;
+  initialize_products : () -> (Result_7);
   is_dev_check : () -> (bool) query;
-  pause_subscription : (nat64, text) -> (Result_1);
-  resume_subscription : (nat64, text) -> (Result_1);
-  update_order_status_admin : (nat64, OrderStatus) -> (Result_7);
-  update_profile : (UserProfile) -> (Result_10);
-  update_subscription_details : (
-      nat64,
-      text,
-      UpdateSubscriptionDetailsPayload,
-    ) -> (Result_1);
+  update_order_status_admin : (nat64, OrderStatus) -> (Result_5);
+  update_profile : (UserProfile) -> (Result_8);
 }

@@ -11,6 +11,7 @@ export interface UserProfile {
     name: string;
     address: string;
     phone_number: string;
+    order_ids: number[];
 }
 
 export interface OrderItem {

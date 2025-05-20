@@ -8,13 +8,6 @@ export interface AddProductPayload {
   'description' : string,
   'price' : number,
 }
-export interface CreateSubscriptionPayload {
-  'delivery_days' : Array<string>,
-  'start_date' : bigint,
-  'delivery_address' : string,
-  'items' : Array<OrderItemInput>,
-  'delivery_time_slot' : string,
-}
 export type GetUserDataError = { 'FailedToAddToList' : null } |
   { 'DidntFindUserData' : null } |
   { 'AnonymousCaller' : null };
@@ -55,94 +48,46 @@ export interface Product {
 }
 export type Result = { 'Ok' : bigint } |
   { 'Err' : string };
-export type Result_1 = { 'Ok' : Subscription } |
-  { 'Err' : SubscriptionError };
-export type Result_10 = { 'Ok' : null } |
+export type Result_1 = { 'Ok' : bigint } |
+  { 'Err' : OrderError };
+export type Result_2 = { 'Ok' : null } |
+  { 'Err' : string };
+export type Result_3 = { 'Ok' : UserProfile } |
+  { 'Err' : string };
+export type Result_4 = { 'Ok' : Array<Order> } |
+  { 'Err' : OrderError };
+export type Result_5 = { 'Ok' : Order } |
+  { 'Err' : OrderError };
+export type Result_6 = { 'Ok' : UserProfile } |
   { 'Err' : GetUserDataError };
-export type Result_2 = { 'Ok' : bigint } |
-  { 'Err' : OrderError };
-export type Result_3 = { 'Ok' : null } |
+export type Result_7 = { 'Ok' : string } |
   { 'Err' : string };
-export type Result_4 = { 'Ok' : UserProfile } |
-  { 'Err' : string };
-export type Result_5 = { 'Ok' : Array<Order> } |
-  { 'Err' : OrderError };
-export type Result_6 = { 'Ok' : Array<Subscription> } |
-  { 'Err' : SubscriptionError };
-export type Result_7 = { 'Ok' : Order } |
-  { 'Err' : OrderError };
-export type Result_8 = { 'Ok' : UserProfile } |
+export type Result_8 = { 'Ok' : null } |
   { 'Err' : GetUserDataError };
-export type Result_9 = { 'Ok' : string } |
-  { 'Err' : string };
-export interface Subscription {
-  'id' : bigint,
-  'status' : SubscriptionStatus,
-  'updated_at' : bigint,
-  'delivery_days' : Array<string>,
-  'created_at' : bigint,
-  'user_phone_number' : string,
-  'start_date' : bigint,
-  'delivery_address' : string,
-  'next_order_date' : bigint,
-  'items' : Array<OrderItemInput>,
-  'delivery_time_slot' : string,
-}
-export type SubscriptionError = { 'AccessDenied' : null } |
-  { 'InvalidInput' : string } |
-  { 'SubscriptionNotFound' : null } |
-  { 'ProductNotFound' : bigint } |
-  { 'AlreadyExists' : null } |
-  { 'UserProfileNotFound' : null } |
-  { 'UpdateFailed' : string } |
-  { 'StorageError' : string };
-export interface SubscriptionItem { 'product_id' : bigint, 'quantity' : number }
-export type SubscriptionStatus = { 'Paused' : null } |
-  { 'Active' : null } |
-  { 'Cancelled' : null };
-export interface UpdateSubscriptionDetailsPayload {
-  'delivery_days' : [] | [Array<string>],
-  'delivery_address' : [] | [string],
-  'items' : [] | [Array<OrderItemInput>],
-  'delivery_time_slot' : [] | [string],
-}
 export interface UserProfile {
   'name' : string,
+  'order_ids' : BigUint64Array | bigint[],
   'address' : string,
   'phone_number' : string,
 }
 export interface _SERVICE {
   'add_product_admin' : ActorMethod<[AddProductPayload], Result>,
-  'cancel_subscription' : ActorMethod<[bigint, string], Result_1>,
   'create_order' : ActorMethod<
     [string, Array<OrderItemInput>, string],
-    Result_2
-  >,
-  'create_profile' : ActorMethod<[UserProfile], Result_3>,
-  'create_subscription' : ActorMethod<
-    [string, CreateSubscriptionPayload],
     Result_1
   >,
-  'delete_profile_admin' : ActorMethod<[string], Result_4>,
+  'create_profile' : ActorMethod<[UserProfile], Result_2>,
+  'delete_profile_admin' : ActorMethod<[string], Result_3>,
   'get_all_customers' : ActorMethod<[], Array<UserProfile>>,
-  'get_all_orders' : ActorMethod<[], Result_5>,
-  'get_all_subscriptions' : ActorMethod<[], Result_6>,
-  'get_my_orders' : ActorMethod<[string], Result_5>,
-  'get_my_subscriptions' : ActorMethod<[string], Result_6>,
-  'get_order_details' : ActorMethod<[bigint, string], Result_7>,
+  'get_all_orders' : ActorMethod<[], Result_4>,
+  'get_my_orders' : ActorMethod<[string], Result_4>,
+  'get_order_details' : ActorMethod<[bigint, string], Result_5>,
   'get_products' : ActorMethod<[], Array<Product>>,
-  'get_profile_by_phone' : ActorMethod<[string], Result_8>,
-  'get_subscription_details' : ActorMethod<[bigint, string], Result_1>,
-  'initialize_products' : ActorMethod<[], Result_9>,
+  'get_profile_by_phone' : ActorMethod<[string], Result_6>,
+  'initialize_products' : ActorMethod<[], Result_7>,
   'is_dev_check' : ActorMethod<[], boolean>,
-  'pause_subscription' : ActorMethod<[bigint, string], Result_1>,
-  'resume_subscription' : ActorMethod<[bigint, string], Result_1>,
-  'update_order_status_admin' : ActorMethod<[bigint, OrderStatus], Result_7>,
-  'update_profile' : ActorMethod<[UserProfile], Result_10>,
-  'update_subscription_details' : ActorMethod<
-    [bigint, string, UpdateSubscriptionDetailsPayload],
-    Result_1
-  >,
+  'update_order_status_admin' : ActorMethod<[bigint, OrderStatus], Result_5>,
+  'update_profile' : ActorMethod<[UserProfile], Result_8>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];
