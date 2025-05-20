@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { getAllSubscriptions, getProducts } from "$lib/api";
   import type { Subscription as SubscriptionType, Product } from "$lib/types";
+  import { goto } from "$app/navigation";
 
   // Define types for our data
   interface DisplaySubscriptionItem {
@@ -34,6 +35,8 @@
     number,
     { name: string; price: number; unit: string }
   >();
+  let updatingStatus: { [key: string]: boolean } = {}; // To track loading state for each subscription status update
+  let updateError: { [key: string]: string | null } = {}; // To track error messages for each status update
 
   // For filtering
   let filterStatus = "All";
@@ -93,9 +96,26 @@
     }
   }
 
-  function formatDate(timestamp: number | undefined): string {
-    if (!timestamp || timestamp === 0) return "N/A";
-    const date = new Date(timestamp);
+  function formatDate(timestamp: number | bigint | undefined): string {
+    if (timestamp === undefined || timestamp === null) return "N/A";
+
+    // Convert BigInt to Number for division and Date constructor
+    const numericTimestamp = Number(timestamp);
+    if (numericTimestamp === 0) return "N/A";
+
+    // Assume timestamp is in nanoseconds if it's a very large number, convert to milliseconds
+    // Or if it's already small enough, assume it's in seconds or milliseconds (though backend consistently uses ns)
+    // A more robust check might be needed if timestamp units vary wildly.
+    const timestampInMilliseconds =
+      numericTimestamp > 1_000_000_000_000
+        ? numericTimestamp / 1_000_000
+        : numericTimestamp * 1000; // If it was seconds, convert to ms. If ms, this is too much.
+    // Backend provides nanoseconds, so primary path is /1_000_000
+
+    // Correcting the assumption: backend gives nanoseconds.
+    // const timestampInMilliseconds = numericTimestamp / 1_000_000;
+
+    const date = new Date(numericTimestamp / 1_000_000); // Assuming nanoseconds from backend.
     if (isNaN(date.getTime())) return "Invalid Date";
     return date.toLocaleDateString("en-IN", {
       year: "numeric",
@@ -104,22 +124,56 @@
     });
   }
 
-  function handleStatusChange(
+  async function handleStatusChange(
     subscriptionId: bigint | number,
     newStatus: string
-  ): void {
-    // In a real app, call API to update subscription status
-    console.log(
-      `Updating subscription ${subscriptionId} to status: ${newStatus}`
-    );
+  ): Promise<void> {
+    const subIdStr = String(subscriptionId);
+    updatingStatus = { ...updatingStatus, [subIdStr]: true };
+    updateError = { ...updateError, [subIdStr]: null };
 
-    // Update local state for demo
-    subscriptions = subscriptions.map((sub) => {
-      if (sub.id === subscriptionId) {
-        return { ...sub, status: newStatus };
-      }
-      return sub;
-    });
+    try {
+      // In a real app, call API to update subscription status
+      // This is a placeholder for the actual API call
+      // await updateSubscriptionStatusAdmin(subscriptionId, newStatus);
+      console.log(
+        `Simulating API call: Updating subscription ${subscriptionId} to status: ${newStatus}`
+      );
+      // Simulate API delay
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // If API call is successful, then update local state
+      subscriptions = subscriptions.map((sub) => {
+        if (String(sub.id) === subIdStr) {
+          // The backend might return the updated subscription or just a success status.
+          // For now, we update the status locally. If the backend returns an enum
+          // like { Active: null }, we need to transform newStatus to that format.
+          // For simplicity, assuming newStatus is already in the correct format or a simple string.
+          let backendStatusFormat: any;
+          if (newStatus === "Active") backendStatusFormat = { Active: null };
+          else if (newStatus === "Paused")
+            backendStatusFormat = { Paused: null };
+          else if (newStatus === "Cancelled")
+            backendStatusFormat = { Cancelled: null };
+          else backendStatusFormat = newStatus; // Fallback, though should match known statuses
+
+          return { ...sub, status: backendStatusFormat };
+        }
+        return sub;
+      });
+      console.log("Local state updated after simulated API call.");
+    } catch (err) {
+      console.error(
+        `Failed to update status for subscription ${subscriptionId}:`,
+        err
+      );
+      updateError = {
+        ...updateError,
+        [subIdStr]: "Failed to update status. Please try again.",
+      };
+    } finally {
+      updatingStatus = { ...updatingStatus, [subIdStr]: false };
+    }
   }
 
   function handleSelectChange(
@@ -256,9 +310,7 @@
           >
             <div class="subscription-header">
               <div class="subscription-id">
-                <span style="font-size:1.1em;"
-                  >ID: #{String(subscription.id)}</span
-                >
+                <span style="font-size:1.1em;">ID: {subscription.id}</span>
               </div>
               <div
                 class="subscription-status"
@@ -269,11 +321,20 @@
                 <select
                   value={getStatusDisplayName(subscription.status)}
                   on:change={(e) => handleSelectChange(e, subscription.id)}
+                  disabled={updatingStatus[String(subscription.id)]}
                 >
                   <option value="Active">Active</option>
                   <option value="Paused">Paused</option>
                   <option value="Cancelled">Cancelled</option>
                 </select>
+                {#if updatingStatus[String(subscription.id)]}
+                  <span class="status-updating-spinner">Updating...</span>
+                {/if}
+                {#if updateError[String(subscription.id)]}
+                  <span class="status-update-error"
+                    >{updateError[String(subscription.id)]}</span
+                  >
+                {/if}
               </div>
             </div>
 
@@ -330,6 +391,15 @@
                   <p>No items in this subscription.</p>
                 {/if}
               </div>
+            </div>
+            <div class="subscription-actions">
+              <button
+                class="action-btn view-details-btn"
+                on:click={() => goto(`/admin/subscriptions/${subscription.id}`)}
+              >
+                View Details
+              </button>
+              <!-- Placeholder for future Manage Orders button -->
             </div>
           </div>
         {/each}
@@ -466,6 +536,15 @@
     font-size: 0.9rem;
   }
 
+  .status-updating-spinner,
+  .status-update-error {
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+  }
+  .status-update-error {
+    color: red;
+  }
+
   .subscription-details {
     padding: 1rem;
     font-size: 1.05em;
@@ -473,6 +552,34 @@
 
   .subscription-details .icon {
     margin-right: 0.3em;
+  }
+
+  .subscription-actions {
+    padding: 0.5rem 1rem 1rem 1rem;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .action-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+  }
+  .action-btn:hover {
+    background-color: #e0e0e0;
+  }
+  .view-details-btn {
+    background-color: #e3f2fd; /* Light blue */
+    border-color: #bbdefb;
+    color: #0d47a1;
+  }
+  .view-details-btn:hover {
+    background-color: #bbdefb;
   }
 
   .info-group {

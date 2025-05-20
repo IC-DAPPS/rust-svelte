@@ -8,13 +8,22 @@ export async function getProducts(): Promise<Product[]> {
     const result = await backendActor.get_products();
     // Ensure we're handling the response correctly
     // Convert backend product format to frontend format
-    return (result || []).map(item => ({
-      id: Number(item.id),
-      name: item.name,
-      unit: item.unit,
-      description: item.description,
-      price: Number(item.price)
-    }));
+    return (result || []).map(item => {
+      let imageName;
+      if (item.name === "Matha") {
+        imageName = 'buttermilk.jpg';
+      } else {
+        imageName = item.name.toLowerCase().replace(/\s+/g, '-') + '.jpg'; // Assuming .jpg for all images
+      }
+      return {
+        id: Number(item.id),
+        name: item.name,
+        unit: item.unit,
+        description: item.description,
+        price: Number(item.price),
+        imageUrl: `/images/products/${imageName}`
+      };
+    });
   } catch (error) {
     console.error("Error fetching products:", error);
     toastsStore.show({
@@ -575,4 +584,175 @@ function convertBackendSubscription(backendSubscription: any): Subscription {
     created_at: backendSubscription.created_at ? Number(backendSubscription.created_at) / 1000000 : 0,
     updated_at: backendSubscription.updated_at ? Number(backendSubscription.updated_at) / 1000000 : 0,
   };
+}
+
+export async function updateProduct(product: Product): Promise<Product | null> {
+  try {
+    // This would be the payload for the backend. Ensure types match.
+    const payload = {
+      id: BigInt(product.id), // Assuming backend expects BigInt for ID
+      name: product.name,
+      unit: product.unit,
+      description: product.description,
+      price: product.price, // Assuming backend expects number for price
+    };
+
+    console.log("Calling backendActor.update_product_admin with payload:", payload);
+    // const result = await backendActor.update_product_admin(payload);
+    // Simulate backend call for now
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const result = { Ok: product.id }; // Simulate a successful response with the product ID
+
+    if ('Ok' in result) {
+      // The backend might return the full updated product or just an ID/status.
+      // Here, we assume it was successful and return the product data passed in,
+      // as if the backend confirmed the update without returning the full object.
+      // Or, if backend returns the full object: return convertBackendProduct(result.Ok);
+      toastsStore.show({
+        text: `Product "${product.name}" updated successfully. (Simulated)`, // Added (Simulated)
+        level: "success",
+      });
+      return product; // Return the product passed in, as it reflects the new state.
+    } else {
+      // console.error("Failed to update product:", result.Err);
+      // toastsStore.show({
+      //   text: "Failed to update product: " + result.Err,
+      //   level: "error",
+      // });
+      // Simulate an error for demonstration if needed, or handle actual result.Err
+      console.error("Simulated error or unhandled response from update_product_admin");
+      toastsStore.show({
+        text: "Failed to update product. (Simulated Error)",
+        level: "error",
+      });
+      return null;
+    }
+  } catch (error) {
+    console.error("Error updating product:", error);
+    toastsStore.show({
+      text: "An error occurred while updating product.",
+      level: "error",
+    });
+    return null;
+  }
+}
+
+export async function getSubscriptionDetailsAdmin(subscriptionId: bigint): Promise<Subscription | null> {
+  try {
+    // In a real backend, this might call a specific admin-authorized method
+    // For now, we can simulate or call a generic one if available that doesn't require user phone for admin context
+    // const result = await backendActor.get_subscription_details_admin(subscriptionId);
+
+    // SIMULATION: We'll try to find it from getAllSubscriptions for now, or simulate a direct fetch.
+    // This is NOT how you'd do it in production with a proper backend method.
+    console.log(`Simulating Admin fetch for subscription ID: ${subscriptionId}`);
+    const allSubscriptions = await getAllSubscriptions(); // Inefficient, just for simulation
+    const foundSubscription = allSubscriptions.find(sub => sub.id === Number(subscriptionId));
+
+    if (foundSubscription) {
+      toastsStore.show({
+        text: `Admin: Subscription details for ${subscriptionId} fetched (Simulated).`,
+        level: "info",
+      });
+      return foundSubscription; // Already in frontend format due to getAllSubscriptions
+    } else {
+      // Simulate a case where backend would return an error or empty for a specific admin fetch
+      // const result = await backendActor.get_subscription_details_admin(subscriptionId); 
+      // if ("Ok" in result && result.Ok) { return convertBackendSubscription(result.Ok); }
+      // else if ("Err" in result) { console.error(result.Err); } 
+
+      toastsStore.show({
+        text: `Admin: Subscription ID ${subscriptionId} not found (Simulated).`,
+        level: "warning",
+      });
+      return null;
+    }
+  } catch (error) {
+    console.error(`Error fetching subscription details for admin (ID: ${subscriptionId}):`, error);
+    toastsStore.show({
+      text: "Failed to fetch subscription details for admin.",
+      level: "error",
+    });
+    throw new Error("Failed to fetch subscription details for admin");
+  }
+}
+
+export async function getOrderDetailsAdmin(orderId: bigint): Promise<Order | null> {
+  try {
+    console.log(`Simulating API call to getOrderDetailsAdmin for order ID: ${orderId}`);
+    // const result = await backendActor.get_order_details_admin(orderId);
+    // For simulation, let's try to find it from getAllOrders.
+    // This is NOT efficient for production but serves as a placeholder.
+    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate network delay
+    const allOrders = await getAllOrders(); // This itself might call backend
+    const foundOrder = allOrders.find(o => o.id === Number(orderId));
+
+    if (foundOrder) {
+      toastsStore.show({
+        text: `Admin: Order details for ${orderId} fetched (Simulated).`,
+        level: "info",
+      });
+      return foundOrder; // Already in frontend format due to getAllOrders
+    } else {
+      // const errorMsg = 'Err' in result ? result.Err : "Order not found";
+      // console.error(`getOrderDetailsAdmin: Order ${orderId} not found or error:`, errorMsg);
+      // toastsStore.show({
+      //   text: `Failed to get order details: ${errorMsg} (Simulated)`,
+      //   level: "warning",
+      // });
+      console.warn(`Simulated: Order ${orderId} not found in getOrderDetailsAdmin.`);
+      toastsStore.show({
+        text: `Admin: Order ${orderId} not found (Simulated).`,
+        level: "warning",
+      });
+      return null;
+    }
+  } catch (error) {
+    console.error(`Error in getOrderDetailsAdmin for order ${orderId}:`, error);
+    toastsStore.show({
+      text: "An error occurred while fetching order details for admin.",
+      level: "error",
+    });
+    // Depending on how you want to handle errors, you might throw or return null
+    // throw new Error("Failed to fetch order details for admin"); 
+    return null;
+  }
+}
+
+export async function updateOrderStatusAdmin(orderId: bigint, newStatus: OrderStatus): Promise<boolean> {
+  try {
+    console.log(`Simulating API call to update order ${orderId} to status:`, newStatus);
+    // const result = await backendActor.update_order_status_admin(orderId, newStatus);
+    await new Promise(resolve => setTimeout(resolve, 700)); // Simulate network delay
+    // const success = 'Ok' in result; // Or however your backend indicates success
+    const success = true; // Simulate success
+
+    if (success) {
+      toastsStore.show({
+        text: `Order ${orderId} status updated successfully (Simulated).`,
+        level: "success",
+      });
+      return true;
+    } else {
+      // const errorMsg = 'Err' in result ? result.Err : "Unknown error";
+      // console.error(`Failed to update order status for ${orderId}:`, errorMsg);
+      // toastsStore.show({
+      //   text: `Failed to update order status: ${errorMsg} (Simulated)`,
+      //   level: "error",
+      // });
+      console.error(`Simulated failure to update order status for ${orderId}.`);
+      toastsStore.show({
+        text: `Failed to update order status for ${orderId} (Simulated).`,
+        level: "error",
+      });
+      return false;
+    }
+  } catch (error) {
+    console.error(`Error in updateOrderStatusAdmin for order ${orderId}:`, error);
+    toastsStore.show({
+      text: "An error occurred while updating order status.",
+      level: "error",
+    });
+    return false;
+  }
 }

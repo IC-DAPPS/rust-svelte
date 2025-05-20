@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
   import { getAllCustomers } from "$lib/api";
   import type { UserProfile } from "$lib/types";
 
@@ -7,8 +8,8 @@
   interface Customer extends UserProfile {
     email?: string; // Optional email field
     created_at?: number; // When the user was created
-    orders_count?: number;
-    subscriptions_count?: number;
+    // orders_count?: number; // Removed
+    // has_active_subscription?: boolean; // Removed
   }
 
   let customers: Customer[] = [];
@@ -30,14 +31,10 @@
       // Fetch customers from backend
       const userData = await getAllCustomers();
 
-      // Transform to Customer interface with order and subscription counts
-      // In a complete implementation, you'd fetch order and subscription counts from backend
       customers = userData.map((user) => ({
         ...user,
         email: `${user.phone_number}@example.com`, // Placeholder email
         created_at: Date.now() - Math.floor(Math.random() * 30) * 86400000, // Random date
-        orders_count: 0, // Placeholder - would fetch real data in production
-        subscriptions_count: 0, // Placeholder - would fetch real data in production
       }));
 
       isLoading = false;
@@ -69,6 +66,12 @@
       customer.address.toLowerCase().includes(query)
     );
   });
+
+  function viewCustomerProfile(customerPhoneNumber: string) {
+    goto(`/profile?phone=${customerPhoneNumber}&adminView=true`);
+  }
+
+  // Removed viewCustomerSubscription and viewCustomerOrders functions
 </script>
 
 <svelte:head>
@@ -124,9 +127,7 @@
               <th>Email</th>
               <th>Address</th>
               <th>Customer Since</th>
-              <th>Orders</th>
-              <th>Subscriptions</th>
-              <th>Actions</th>
+              <th>Profile</th>
             </tr>
           </thead>
           <tbody>
@@ -141,11 +142,12 @@
                     ? formatDate(customer.created_at)
                     : "N/A"}</td
                 >
-                <td>{customer.orders_count ?? 0}</td>
-                <td>{customer.subscriptions_count ?? 0}</td>
-                <td class="actions-cell">
-                  <button class="action-btn view-btn">View</button>
-                  <button class="action-btn orders-btn">Orders</button>
+                <td class="profile-action-cell">
+                  <button
+                    class="action-btn profile-btn"
+                    on:click={() => viewCustomerProfile(customer.phone_number)}
+                    title="View customer's profile">View Profile</button
+                  >
                 </td>
               </tr>
             {/each}
@@ -220,6 +222,7 @@
     padding: 0.8rem;
     text-align: left;
     border-bottom: 1px solid #eee;
+    vertical-align: middle;
   }
 
   .customers-table th {
@@ -235,26 +238,22 @@
     text-overflow: ellipsis;
   }
 
-  .actions-cell {
+  .profile-action-cell {
     white-space: nowrap;
+    text-align: center; /* Center the button in its cell */
   }
 
-  .action-btn {
-    padding: 0.4rem 0.8rem;
-    margin-right: 0.4rem;
+  .profile-btn {
+    background-color: #007bff; /* Bootstrap primary color */
+    color: white;
     border: none;
     border-radius: 4px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
     cursor: pointer;
   }
-
-  .view-btn {
-    background-color: #4299e1;
-    color: white;
-  }
-
-  .orders-btn {
-    background-color: #5eaa6f;
-    color: white;
+  .profile-btn:hover {
+    background-color: #0056b3;
   }
 
   .loading-container,

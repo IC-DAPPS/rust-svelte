@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getProducts, addProduct } from "$lib/api";
+  import { getProducts, addProduct, updateProduct } from "$lib/api";
   import type { Product } from "$lib/types";
 
   let products: Product[] = [];
@@ -18,6 +18,13 @@
   let isAddingProduct = false;
   let addProductError = "";
   let addProductSuccess = "";
+
+  // Edit product state
+  let showEditForm = false;
+  let editingProduct: Product | null = null;
+  let isUpdatingProduct = false;
+  let editProductError = "";
+  let editProductSuccess = "";
 
   // Units for dropdown
   const units = ["kg", "litre", "piece"];
@@ -81,6 +88,71 @@
       addProductError = "An error occurred while adding the product";
     } finally {
       isAddingProduct = false;
+    }
+  }
+
+  function openEditForm(product: Product) {
+    // Create a deep copy for editing to avoid mutating the original object directly in the list
+    editingProduct = JSON.parse(JSON.stringify(product));
+    showEditForm = true;
+    showAddForm = false; // Hide add form if open
+    editProductError = "";
+    editProductSuccess = "";
+  }
+
+  function resetEditForm() {
+    editingProduct = null;
+    showEditForm = false;
+    editProductError = "";
+    editProductSuccess = "";
+  }
+
+  async function handleUpdateProduct() {
+    if (!editingProduct) {
+      editProductError = "No product selected for editing.";
+      return;
+    }
+
+    // Validate form
+    if (
+      !editingProduct.name ||
+      !editingProduct.description ||
+      editingProduct.price <= 0
+    ) {
+      editProductError =
+        "Please fill all fields with valid values for the product.";
+      return;
+    }
+
+    isUpdatingProduct = true;
+    editProductError = "";
+    editProductSuccess = "";
+
+    try {
+      const updatedProductFromApi = await updateProduct(editingProduct);
+      // Simulate API call for now
+      // console.log("Simulating API call to updateProduct with:", editingProduct);
+      // await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+      // const updatedProductFromApi = { ...editingProduct }; // Simulate successful update
+
+      if (updatedProductFromApi) {
+        products = products.map((p) =>
+          p.id === updatedProductFromApi.id ? updatedProductFromApi : p
+        );
+        editProductSuccess = `Product "${updatedProductFromApi.name}" updated successfully!`;
+        setTimeout(() => {
+          resetEditForm(); // Resets form and hides it
+        }, 1500); // Keep success message visible for a bit
+      } else {
+        editProductError = "Failed to update product. API returned no data.";
+      }
+    } catch (error) {
+      console.error("Error updating product:", error);
+      // In a real scenario, parse error to be more specific
+      editProductError =
+        "An error occurred while updating the product. Please try again.";
+    } finally {
+      isUpdatingProduct = false;
     }
   }
 </script>
@@ -181,6 +253,80 @@
     </div>
   {/if}
 
+  {#if showEditForm && editingProduct}
+    <div class="edit-product-form product-form">
+      <h2>Edit Product (ID: {editingProduct.id})</h2>
+
+      {#if editProductError}
+        <div class="error-message">{editProductError}</div>
+      {/if}
+
+      {#if editProductSuccess}
+        <div class="success-message">{editProductSuccess}</div>
+      {/if}
+
+      <form on:submit|preventDefault={handleUpdateProduct}>
+        <div class="form-group">
+          <label for="edit-product-name">Product Name *</label>
+          <input
+            type="text"
+            id="edit-product-name"
+            bind:value={editingProduct.name}
+            placeholder="Enter product name"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="edit-product-description">Description *</label>
+          <textarea
+            id="edit-product-description"
+            bind:value={editingProduct.description}
+            placeholder="Enter product description"
+            rows="3"
+            required
+          ></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-product-price">Price (₹) *</label>
+            <input
+              type="number"
+              id="edit-product-price"
+              bind:value={editingProduct.price}
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="edit-product-unit">Unit *</label>
+            <select id="edit-product-unit" bind:value={editingProduct.unit}>
+              {#each units as unit (unit)}
+                <option value={unit}>{unit}</option>
+              {/each}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="cancel-btn" on:click={resetEditForm}>
+            Cancel
+          </button>
+          <button type="submit" class="submit-btn" disabled={isUpdatingProduct}>
+            {#if isUpdatingProduct}
+              <span class="spinner-small"></span> Updating...
+            {:else}
+              Update Product
+            {/if}
+          </button>
+        </div>
+      </form>
+    </div>
+  {/if}
+
   <div class="products-section">
     <div class="section-header">
       <h2>All Products</h2>
@@ -209,6 +355,7 @@
           <thead>
             <tr>
               <th>ID</th>
+              <th>Image</th>
               <th>Name</th>
               <th>Description</th>
               <th>Price</th>
@@ -220,12 +367,26 @@
             {#each products as product (product.id)}
               <tr>
                 <td>{product.id}</td>
+                <td>
+                  {#if product.imageUrl}
+                    <img
+                      src={product.imageUrl}
+                      alt={product.name}
+                      class="product-thumbnail"
+                    />
+                  {:else}
+                    <span class="no-image">No Image</span>
+                  {/if}
+                </td>
                 <td>{product.name}</td>
                 <td>{product.description}</td>
                 <td>₹{product.price}</td>
                 <td>{product.unit}</td>
                 <td class="actions-cell">
-                  <button class="action-btn edit-btn">Edit</button>
+                  <button
+                    class="action-btn edit-btn"
+                    on:click={() => openEditForm(product)}>Edit</button
+                  >
                 </td>
               </tr>
             {/each}
@@ -393,6 +554,25 @@
     font-weight: 600;
   }
 
+  .product-thumbnail {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #eee;
+  }
+  .no-image {
+    font-size: 0.8rem;
+    color: #999;
+    display: inline-block;
+    width: 60px;
+    height: 60px;
+    line-height: 60px;
+    text-align: center;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+  }
+
   .actions-cell {
     display: flex;
     gap: 0.5rem;
@@ -488,5 +668,28 @@
     .add-btn {
       width: 100%;
     }
+  }
+
+  /* Shared form styling */
+  .product-form {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+  }
+  .product-form h2 {
+    font-size: 1.5rem;
+    color: #333;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.8rem;
+  }
+  .add-product-form {
+    /* Extend common styles or add specific ones */
+  }
+  .edit-product-form {
+    /* Extend common styles or add specific ones */
+    border-left: 4px solid #2196f3; /* Blue accent for edit form */
   }
 </style>

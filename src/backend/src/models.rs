@@ -17,6 +17,11 @@ pub struct UserProfile {
     // Making name and address mandatory for shipping/transaction context
     pub name: String,
     pub address: String,
+    // Store order IDs for user's order history
+    pub order_ids: Vec<u64>,
+    // Indicates if user has an active subscription (user can only have one subscription at a time)
+    pub has_active_subscription: bool,
+    pub active_subscription_id: Option<u64>,
     // Keep other optional fields if needed, e.g., email
     // pub email: Option<String>,
     // We can add order history or preferences here later

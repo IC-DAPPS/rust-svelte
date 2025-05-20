@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { page } from "$app/stores"; // Import page store
+  import { goto } from "$app/navigation"; // Import goto for navigation
   import {
     getProfileByPhone,
     createProfile,
@@ -8,7 +10,8 @@
     getMyOrders,
     getProducts,
   } from "$lib/api";
-  import type { UserProfile, Order, Product } from "$lib/types";
+  import type { UserProfile, Order, Product, Subscription } from "$lib/types"; // Added Subscription type
+  import { toastsStore } from "$lib/stores/toasts"; // For showing toast messages
 
   let phoneNumber = "";
   let profile: UserProfile | null = null;
@@ -22,7 +25,7 @@
 
   // For subscription tracking
   let hasActiveSubscription = false;
-  let subscriptionData: any = null;
+  let subscriptionData: Subscription | null = null; // Use Subscription type
 
   // Computed properties for display
   let formattedDeliveryDays = "";
@@ -35,72 +38,159 @@
   let ordersLoading = false;
   let productMap: Map<number, string> = new Map();
 
+  let isAdminViewing = false; // To track if admin is viewing
+
   onMount(() => {
-    // Check if user is already logged in via localStorage
-    const storedPhoneNumber = localStorage.getItem("userPhoneNumber");
-    if (storedPhoneNumber) {
-      phoneNumber = storedPhoneNumber;
+    const params = $page.url.searchParams;
+    const phoneFromQuery = params.get("phone");
+    const adminViewFromQuery = params.get("adminView");
+
+    isAdminViewing = adminViewFromQuery === "true";
+
+    if (phoneFromQuery) {
+      phoneNumber = phoneFromQuery;
       isLoggedIn = true;
       loadProfile();
       checkForSubscription();
       loadProductsAndOrders();
+    } else if (!isAdminViewing) { // Only fallback to localStorage if not admin viewing (admin always needs phone in URL)
+      const storedPhoneNumber = localStorage.getItem("userPhoneNumber");
+      if (storedPhoneNumber) {
+        phoneNumber = storedPhoneNumber;
+        isLoggedIn = true;
+        loadProfile();
+        checkForSubscription();
+        loadProductsAndOrders();
+      }
+    }
+
+    // If admin is viewing but no phone number, they can't see anything
+    if (isAdminViewing && !phoneFromQuery) {
+        isLoggedIn = false; // Ensure nothing loads if admin view is true but no phone
+        loading = false;
+        ordersLoading = false;
+        message = "Cannot display profile: Phone number missing for admin view.";
+        toastsStore.show({ text: message, level: "error" });
     }
   });
 
   function checkForSubscription() {
+    if (!phoneNumber && !isAdminViewing) return; // Don't check if not logged in (for non-admin)
+
     const savedSubscription = localStorage.getItem("userSubscription");
-    if (savedSubscription) {
+    if (savedSubscription && !isAdminViewing) { // Admin view should rely on fresh data, not localStorage for subscription display
       try {
-        subscriptionData = JSON.parse(savedSubscription);
-        hasActiveSubscription = true;
-        formatSubscriptionDataForDisplay(); // Format data after loading
+        const parsedData = JSON.parse(savedSubscription);
+        // Basic validation of parsed data
+        if (parsedData && parsedData.id !== undefined) {
+            subscriptionData = parsedData as Subscription;
+            hasActiveSubscription = true;
+            formatSubscriptionDataForDisplay();
+        } else {
+            throw new Error("Invalid subscription data structure");
+        }
       } catch (e) {
         console.error("Failed to parse saved subscription", e);
-        // Reset subscription state if parsing fails
         hasActiveSubscription = false;
         subscriptionData = null;
-        // Remove invalid data from localStorage
         localStorage.removeItem("userSubscription");
       }
+    } else if (isAdminViewing || !savedSubscription) { // For admin or if no localStorage, try to fetch
+        fetchUserSubscription();
     } else {
-      // Explicitly reset if no subscription found
       hasActiveSubscription = false;
       subscriptionData = null;
     }
   }
 
+  async function fetchUserSubscription() {
+    if (!phoneNumber) return;
+    try {
+      const userSubscriptions = await getMySubscriptions(phoneNumber);
+      if (userSubscriptions && userSubscriptions.length > 0) {
+        // Assuming the first active subscription is the one to show
+        // You might need more sophisticated logic if multiple active subs are possible (though we aimed for one)
+        const activeSub = userSubscriptions.find(sub => sub.status === 'Active'); // Make sure status enum matches backend
+        if (activeSub) {
+            subscriptionData = activeSub;
+            hasActiveSubscription = true;
+            formatSubscriptionDataForDisplay();
+            // For non-admin, also save to localStorage
+            if (!isAdminViewing) {
+                localStorage.setItem("userSubscription", JSON.stringify(activeSub));
+            }
+        } else {
+            hasActiveSubscription = false;
+            subscriptionData = null;
+            if (!isAdminViewing) localStorage.removeItem("userSubscription");
+        }
+      } else {
+        hasActiveSubscription = false;
+        subscriptionData = null;
+        if (!isAdminViewing) localStorage.removeItem("userSubscription");
+      }
+    } catch (error) {
+      console.error("Failed to fetch user subscription from backend:", error);
+      hasActiveSubscription = false;
+      subscriptionData = null;
+      // Don't clear local storage on network error, user might be offline but had data
+    }
+  }
+
+
   function formatSubscriptionDataForDisplay() {
     if (!subscriptionData) return;
 
-    // Format Product Names (e.g., Milk, Paneer) - Check if products array exists
-    formattedProductNames =
-      subscriptionData.products && Array.isArray(subscriptionData.products)
-        ? subscriptionData.products
-            .map((p: any) => p.name.replace(/\n/g, " "))
-            .join(", ")
-        : "N/A";
+    // Format Product Names
+    if (subscriptionData.items && Array.isArray(subscriptionData.items)) {
+      // If productMap is available, use it to get names, otherwise show IDs or a placeholder
+      formattedProductNames = subscriptionData.items
+        .map((item: any) => {
+          const productName = productMap.get(BigInt(item.product_id)); // product_id is nat64
+          return productName
+            ? `${productName} (Qty: ${item.quantity})`
+            : `Product ID: ${item.product_id} (Qty: ${item.quantity})`;
+        })
+        .join(", ");
+    } else {
+      formattedProductNames = "N/A";
+    }
+    
+    // Format Dates
+    const startDate = new Date(Number(subscriptionData.start_date) / 1_000_000); // Convert ns to ms
+    const nextOrderDate = new Date(Number(subscriptionData.next_order_date) / 1_000_000); // Convert ns to ms
 
-    // Format Dates - Make sure we're handling timestamps correctly
-    const startDate = new Date(subscriptionData.startDate);
-    const endDate = new Date(subscriptionData.endDate);
-
-    // Check if dates are valid before formatting
     const startDateStr = !isNaN(startDate.getTime())
       ? startDate.toLocaleDateString()
-      : "Invalid Date";
+      : "Invalid Start Date";
+    const nextOrderDateStr = !isNaN(nextOrderDate.getTime())
+      ? nextOrderDate.toLocaleDateString()
+      : "N/A";
 
-    const endDateStr = !isNaN(endDate.getTime())
-      ? endDate.toLocaleDateString()
-      : "Invalid Date";
+    formattedSubscriptionDates = `Starts: ${startDateStr}, Next Order: ${nextOrderDateStr}`;
 
-    formattedSubscriptionDates = `${startDateStr} - ${endDateStr}`;
+    // Placeholder for Est. Total Cost as it might need recalculation based on current prices or stored subscription cost
+    // For now, if your backend's Subscription type doesn't have a total_cost, this will be an issue.
+    // Let's assume it's not directly available on subscriptionData for now and needs logic
+    // If you have `price_per_unit_at_subscription` on items, you can calculate.
+    let calculatedCost = 0;
+    if (subscriptionData.items && productMap.size > 0) { // Check if productMap is loaded
+        subscriptionData.items.forEach((item: any) => {
+            // This logic assumes we need to get current price from productMap for est. cost
+            // If price_per_unit_at_subscription is on item, use that
+            // const productDetails = products.find(p => p.id === item.product_id); 
+            // For now, skipping detailed cost calculation in this refactor step.
+            // It should ideally come from a field like `estimated_monthly_cost` on the subscription object
+            // or be calculated using `price_per_unit_at_subscription` stored in `SubscriptionItem`.
+        });
+    }
+    // For now, display N/A or a placeholder if not directly available
+    // formattedTotalCost = calculatedCost > 0 ? `₹${calculatedCost.toFixed(2)}` : "Est. Cost: N/A (Recalculate)";
+    // Let's assume there is a `total_estimated_cost` field or similar on subscriptionData for now, if not, it will show N/A
+    const estCost = (subscriptionData as any).total_estimated_cost; // Example field
+    formattedTotalCost = estCost ? `₹${Number(estCost).toFixed(2)}` : "Est. Cost: N/A";
 
-    // Format Total Cost (e.g., ₹1234.50) - Check remains same
-    formattedTotalCost =
-      subscriptionData.totalCost &&
-      typeof subscriptionData.totalCost === "number"
-        ? `₹${subscriptionData.totalCost.toFixed(2)}`
-        : "N/A"; // Show N/A if cost is missing or not a number
+
   }
 
   function handleLogin() {
@@ -115,6 +205,10 @@
   }
 
   function handleUnsubscribe() {
+    if (isAdminViewing) {
+      toastsStore.show({ text: "Admin cannot unsubscribe from this view.", level: "info" });
+      return;
+    }
     if (
       window.confirm(
         "Are you sure you want to unsubscribe? This action cannot be undone."
@@ -130,6 +224,10 @@
   }
 
   async function loadProfile() {
+    if (!phoneNumber) {
+        loading = false;
+        return;
+    }
     loading = true;
     message = "";
     try {
@@ -138,25 +236,26 @@
         name = profile.name;
         address = profile.address;
 
-        // Check if user has any active subscriptions in backend
-        try {
-          const userSubscriptions = await getMySubscriptions(phoneNumber);
-
-          // If backend has no subscriptions but localStorage has subscription data,
-          // clear localStorage data to prevent stale data display
-          if (
-            userSubscriptions.length === 0 &&
-            localStorage.getItem("userSubscription")
-          ) {
-            console.log(
-              "Backend has no subscriptions but localStorage has data - clearing stale data"
-            );
-            localStorage.removeItem("userSubscription");
-            hasActiveSubscription = false;
-            subscriptionData = null;
-          }
-        } catch (err) {
-          console.error("Failed to verify backend subscriptions:", err);
+        // If admin is viewing, we don't need to cross-check localStorage for subscriptions.
+        // The fetchUserSubscription will handle getting the data.
+        // The original logic for clearing stale localStorage is fine for user view.
+        if (!isAdminViewing) {
+            try {
+            const userSubscriptions = await getMySubscriptions(phoneNumber);
+            if (
+                userSubscriptions.length === 0 &&
+                localStorage.getItem("userSubscription")
+            ) {
+                console.log(
+                "Backend has no subscriptions but localStorage has data - clearing stale data"
+                );
+                localStorage.removeItem("userSubscription");
+                hasActiveSubscription = false;
+                subscriptionData = null;
+            }
+            } catch (err) {
+            console.error("Failed to verify backend subscriptions:", err);
+            }
         }
       }
     } catch (error) {
@@ -168,6 +267,10 @@
   }
 
   async function loadProductsAndOrders() {
+    if (!phoneNumber) { // Don't load if no phone number (e.g. admin view without phone)
+        ordersLoading = false;
+        return;
+    }
     ordersLoading = true;
     try {
       // Fetch products and create a map for product_id -> name
@@ -186,6 +289,11 @@
   }
 
   async function loadOrders() {
+    if (!phoneNumber) {
+        currentOrder = null;
+        orders = [];
+        return;
+    }
     try {
       const allOrders = await getMyOrders(phoneNumber);
       orders = allOrders;
@@ -205,15 +313,8 @@
   }
 
   async function handleSubmit() {
-    if (!name.trim()) {
-      message = "Please enter your name";
-      return;
-    }
-
-    if (!address.trim()) {
-      message = "Please enter your address";
-      return;
-    }
+    if (isAdminViewing) return; // Prevent submission for admin
+    if (!profile) return;
 
     submitting = true;
     message = "";
@@ -253,6 +354,7 @@
   }
 
   function toggleEditMode() {
+    if (isAdminViewing) return; // Prevent entering edit mode for admin
     isEditMode = !isEditMode;
 
     if (profile) {
@@ -261,520 +363,309 @@
       address = profile.address;
     }
   }
+
+  function handleLogout() {
+    if (isAdminViewing) { // If admin is viewing, "logout" means going back or closing tab.
+        goto("/admin/customers"); // Or some other appropriate admin page
+        return;
+    }
+    localStorage.removeItem("userPhoneNumber");
+    isLoggedIn = false;
+    phoneNumber = "";
+    profile = null;
+    hasActiveSubscription = false;
+    subscriptionData = null;
+    message = "";
+    loadProfile();
+    loadProductsAndOrders();
+  }
+
+  // Specific navigation functions for admin/user
+  function handleViewOrdersClick() {
+    if (isAdminViewing) {
+      goto(`/admin/orders?userId=${phoneNumber}`);
+    } else {
+      goto("/orders"); // Customer's own orders page (assuming this route exists)
+    }
+  }
+
+  function handleViewSubscriptionClick() {
+    if (isAdminViewing) {
+        if (hasActiveSubscription && subscriptionData) {
+            goto(`/admin/subscriptions?userId=${phoneNumber}&subscriptionId=${subscriptionData.id}`);
+        } else {
+            toastsStore.show({text: "No active subscription for this user.", level: "info"});
+        }
+    } else {
+      // For regular users, "Manage" or viewing subscription details might navigate to /subscription page
+      // or show a modal. Current "Manage" button navigates to /subscription for new subscription.
+      // This might need a dedicated page or modal for viewing *existing* sub details for user.
+      // For now, let's assume the user clicks "Manage" which takes them to /subscription.
+      // If they have a subscription, that page should probably display it.
+      goto("/subscription");
+    }
+  }
+
+  function refreshSubscriptionData() {
+    if (!phoneNumber) return;
+    toastsStore.show({ text: "Refreshing subscription data...", level: "info" });
+    fetchUserSubscription(); // Fetch fresh subscription data
+  }
+
 </script>
 
 <svelte:head>
-  <title>My Profile - Kaniya Dairy</title>
+  <title>{isAdminViewing ? `Admin View: ${name || phoneNumber}` : (name ? `${name}'s Profile` : 'User Profile')}</title>
 </svelte:head>
 
-<div class="profile-page container">
-  <h1>My Profile</h1>
-
-  {#if !isLoggedIn}
-    <div class="login-prompt">
-      <p>Please enter your phone number to view or create your profile</p>
-      <div class="login-form">
-        <input
-          type="tel"
-          bind:value={phoneNumber}
-          placeholder="Phone number"
-          maxlength="10"
-        />
-        <button class="btn btn-primary" on:click={handleLogin}>Continue</button>
-      </div>
+<div class="profile-container">
+  {#if isLoggedIn}
+    <div class="profile-header">
+      <h2>{isAdminViewing ? `Viewing Profile: ${name || phoneNumber}` : 'My Profile'}</h2>
+      {#if !isAdminViewing}
+        <button class="logout-btn" on:click={handleLogout}>Logout</button>
+      {/if}
     </div>
-  {:else if loading}
-    <div class="loading">
-      <div class="spinner"></div>
-      <p>Loading your profile...</p>
-    </div>
-  {:else if profile && !isEditMode}
-    <div class="profile-card">
-      <div class="profile-header">
-        <div class="profile-avatar">
-          <div class="avatar">{name[0]}</div>
+
+    {#if loading}
+      <p>Loading profile...</p>
+    {:else if profile}
+      {#if isAdminViewing}
+        <div class="admin-notice">
+          <p>ℹ️ You are viewing this profile as an Administrator. Editing is disabled.</p>
         </div>
-        <div class="profile-details">
-          <h2>{name}</h2>
-          <p class="phone">{phoneNumber}</p>
-        </div>
+      {/if}
+      <div class="profile-details">
+        <p><strong>Name:</strong> {profile.name}</p>
+        <p><strong>Phone:</strong> {profile.phone_number}</p>
+        <p><strong>Address:</strong> {profile.address}</p>
       </div>
 
-      <div class="profile-info">
-        <div class="info-section">
-          <h3>Delivery Address</h3>
-          <p>{address}</p>
+      {#if !isAdminViewing}
+        <div class="profile-actions">
+          <button class="edit-btn" on:click={toggleEditMode}>
+            {isEditMode ? "Cancel" : "Edit Profile"}
+          </button>
         </div>
-      </div>
+      {/if}
 
-      <!-- Subscription section -->
-      <div class="info-section">
-        <h3>Subscriptions</h3>
+      {#if isEditMode && !isAdminViewing}
+        <form on:submit|preventDefault={handleSubmit} class="profile-form">
+          <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" id="name" bind:value={name} required />
+          </div>
+          <div class="form-group">
+            <label for="address">Address:</label>
+            <textarea id="address" bind:value={address} required></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="save-btn" disabled={submitting}>
+              {submitting ? "Saving..." : "Save Changes"}
+            </button>
+            <button type="button" class="cancel-btn" on:click={toggleEditMode}>Cancel</button>
+          </div>
+        </form>
+      {/if}
+
+      {#if message}<p class="message">{message}</p>{/if}
+
+      <!-- Subscription Section -->
+      <div class="subscription-section card">
+        <h3>My Subscription</h3>
         {#if hasActiveSubscription && subscriptionData}
-          <div class="subscription-card">
-            <div class="subscription-header">
-              <span class="badge active">Active</span>
-              <!-- Display formatted dates -->
-              <span class="subscription-date">{formattedSubscriptionDates}</span
-              >
+        <div class="subscription-info">
+            <span class="status-badge {subscriptionData.status?.toLowerCase()}">{subscriptionData.status}</span>
+            {#if subscriptionData.updated_at}
+                <p class="updated-at">Last Updated: {new Date(Number(subscriptionData.updated_at)/1_000_000).toLocaleString()}</p>
+            {/if}
+            <p><strong>Products:</strong> {formattedProductNames || 'N/A'}</p>
+            <p><strong>Delivery Days:</strong> {subscriptionData.delivery_days?.join(", ") || 'N/A'}</p>
+            <p><strong>Time Slot:</strong> {subscriptionData.delivery_time_slot || 'N/A'}</p>
+            <p><strong>Dates:</strong> {formattedSubscriptionDates || 'N/A'}</p>
+            <p><strong>Est. Total Cost:</strong> {formattedTotalCost || 'N/A'}</p>
+            <p><strong>Delivery Address:</strong> {subscriptionData.delivery_address || 'N/A'}</p>
+
+            <div class="subscription-controls">
+                {#if !isAdminViewing}
+                    <button class="manage-btn" on:click={() => goto('/subscription?edit=true&id=' + subscriptionData?.id)}>Manage</button>
+                    <button class="unsubscribe-btn" on:click={handleUnsubscribe}>Unsubscribe</button>
+                    <button class="refresh-btn" on:click={refreshSubscriptionData}>Refresh Data</button>
+                {:else}
+                     <!-- For admin, a button to view this specific subscription in admin subscriptions page -->
+                    <button class="action-btn admin-view-sub-btn" on:click={() => goto(`/admin/subscriptions?userId=${phoneNumber}&subscriptionId=${subscriptionData?.id}`)}>
+                        View Subscription (Admin)
+                    </button>
+                {/if}
             </div>
-            <div class="subscription-details">
-              <!-- Display formatted product names -->
-              <p><strong>Products:</strong> {formattedProductNames}</p>
-              <!-- Display generic delivery text -->
-              <p><strong>Delivery:</strong> Varies per product</p>
-              <!-- Display preferred time -->
-              <p>
-                <strong>Time:</strong>
-                {subscriptionData.preferredTime === "morning"
-                  ? "Morning (6 AM - 9 AM)"
-                  : "Evening (5 PM - 7 PM)"}
-              </p>
-              <!-- Display formatted total cost -->
-              <p><strong>Est. Total Cost:</strong> {formattedTotalCost}</p>
-            </div>
-            <div class="subscription-actions">
-              <!-- Link Manage button to /subscription -->
-              <a href="/subscription" class="btn btn-outline btn-sm">Manage</a>
-              <!-- Add Unsubscribe button -->
-              <button
-                class="btn btn-danger btn-sm unsubscribe-btn"
-                on:click={handleUnsubscribe}>Unsubscribe</button
-              >
-              <!-- Add Refresh button -->
-              <button
-                class="btn btn-outline btn-sm refresh-btn"
-                on:click={() => {
-                  loadProfile();
-                  checkForSubscription();
-                }}>Refresh Data</button
-              >
-            </div>
-          </div>
+        </div>
         {:else}
-          <div class="no-subscription">
-            <p>You don't have any active subscriptions.</p>
-            <a href="/subscription" class="btn btn-primary"
-              >Setup Daily Delivery</a
-            >
-          </div>
+          <p>You have no active subscriptions.</p>
+          {#if !isAdminViewing}
+            <button class="subscribe-btn" on:click={() => goto("/subscription")}>
+              Create New Subscription
+            </button>
+          {/if}
         {/if}
       </div>
 
-      <!-- Add current order section below subscription section -->
-      <div class="info-section">
+
+      <!-- Current Order Section (Remains largely the same, but consider if admin needs different actions) -->
+      <div class="current-order-section card">
         <h3>Current Order</h3>
         {#if ordersLoading}
           <p>Loading current order...</p>
         {:else if currentOrder}
-          <div class="order-card">
-            <div><strong>Order ID:</strong> #{currentOrder.id}</div>
-            <div>
-              <strong>Status:</strong>
-              {Object.keys(currentOrder.status)[0]}
-            </div>
-            <div>
-              <strong>Placed On:</strong>
-              {currentOrder.timestamp
-                ? new Date(currentOrder.timestamp / 1000000).toLocaleString()
-                : "N/A"}
-            </div>
-            <div>
-              <strong>Delivery Address:</strong>
-              {currentOrder.delivery_address}
-            </div>
-            <div>
-              <strong>Order Items:</strong>
-              <ul>
-                {#each currentOrder.items as item}
-                  <li>
-                    {productMap.get(item.product_id) ||
-                      `Product ${item.product_id}`} - Quantity: {item.quantity},
-                    Price: ₹{item.price_per_unit_at_order}
-                  </li>
-                {/each}
-              </ul>
-            </div>
-            <div>
-              <strong>Total:</strong> ₹{currentOrder.total_amount.toFixed(2)}
-            </div>
+          <div class="order-details">
+            <p><strong>Order ID:</strong> #{currentOrder.id}</p>
+            <p><strong>Status:</strong> <span class="status-badge {currentOrder.status.toLowerCase()}">{currentOrder.status}</span></p>
+            <p><strong>Placed On:</strong> {new Date(Number(currentOrder.timestamp) / 1_000_000).toLocaleString()}</p>
+            <p><strong>Delivery Address:</strong> {currentOrder.delivery_address}</p>
+            <p><strong>Order Items:</strong></p>
+            <ul>
+              {#each currentOrder.items as item}
+                <li>
+                  {productMap.get(BigInt(item.product_id)) || `Product ID ${item.product_id}`}
+                  - Quantity: {item.quantity}, 
+                  Price: ₹{item.price_per_unit_at_order?.toFixed(2)}
+                </li>
+              {/each}
+            </ul>
+            <p><strong>Total:</strong> ₹{currentOrder.total_amount.toFixed(2)}</p>
           </div>
         {:else}
-          <p>No active order.</p>
+          <p>No active order found for the current subscription period.</p>
         {/if}
       </div>
-
-      <div class="profile-actions">
-        <button class="btn btn-primary" on:click={toggleEditMode}
-          >Edit Profile</button
-        >
-        <a href="/orders" class="btn btn-outline">View Orders</a>
+      
+      <!-- Buttons at the bottom -->
+      <div class="profile-page-actions">
+          {#if !isAdminViewing}
+            <!-- Edit profile button is already above near profile details -->
+          {/if}
+          <button class="view-orders-btn" on:click={handleViewOrdersClick}>
+            {isAdminViewing ? 'View All Orders (Admin)' : 'View My Orders'}
+          </button>
       </div>
-    </div>
-  {:else}
-    <!-- Create or edit profile form -->
-    <div class="profile-form">
-      <h2>{profile ? "Edit Profile" : "Create Profile"}</h2>
 
-      {#if message}
-        <div
-          class={message.includes("successfully")
-            ? "success-message"
-            : "error-message"}
-        >
-          {message}
+    {:else if !loading} <!-- if not loading and no profile -->
+      <p>
+        {#if isAdminViewing}
+            Could not load profile for {phoneNumber}. Ensure the phone number is correct.
+        {:else}
+            Please enter your phone number to login or view your profile.
+        {/if}
+      </p>
+      {#if !isAdminViewing}
+        <div class="login-form">
+          <input type="tel" bind:value={phoneNumber} placeholder="Enter phone number" />
+          <button on:click={handleLogin} disabled={!phoneNumber.trim()}>Login / View Profile</button>
         </div>
       {/if}
+    {/if}
+  </div>
+  
+  <style>
+/* ... existing styles ... */
+/* styles for status badges */
+.status-badge {
+  padding: 0.2em 0.6em;
+  border-radius: 0.25rem;
+  font-weight: bold;
+  font-size: 0.85em;
+  color: white;
+  display: inline-block;
+  margin-bottom: 0.5rem; /* Added margin for spacing below badge */
+}
+.status-badge.active, .status-badge.confirmed, .status-badge.pending, .status-badge.processing, .status-badge.outfordelivery { background-color: #28a745; /* Green for active/positive statuses */ }
+.status-badge.pending { background-color: #ffc107; color: #333; } /* Yellow for pending */
+.status-badge.paused { background-color: #fd7e14; /* Orange for paused */ }
+.status-badge.cancelled, .status-badge.error { background-color: #dc3545; /* Red for cancelled/error */ }
+.status-badge.delivered { background-color: #17a2b8; /* Info blue for delivered */ }
 
-      <div class="form-group">
-        <label for="name">Name*</label>
-        <input
-          type="text"
-          id="name"
-          bind:value={name}
-          placeholder="Enter your name"
-          required
-        />
-      </div>
 
-      <div class="form-group">
-        <label for="address">Delivery Address*</label>
-        <textarea
-          id="address"
-          bind:value={address}
-          placeholder="Enter your delivery address"
-          rows="3"
-          required
-        ></textarea>
-      </div>
+.profile-container { max-width: 800px; margin: 2rem auto; padding: 1rem; }
+.profile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+.profile-header h2 { margin: 0; font-size: 1.8rem; color: #333; }
+.logout-btn { background-color: #dc3545; color: white; }
+.admin-notice { background-color: #e9f5ff; border-left: 4px solid #007bff; padding: 1rem; margin-bottom: 1rem; color: #004085; }
+.profile-details { background-color: #f9f9f9; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; }
+.profile-details p { margin: 0.5rem 0; }
+.profile-actions { margin-bottom: 1.5rem; }
+.edit-btn, .save-btn, .cancel-btn, .subscribe-btn, .manage-btn, .unsubscribe-btn, .refresh-btn, .view-orders-btn, .action-btn {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-right: 0.5rem;
+}
+.edit-btn { background-color: #ffc107; color: #212529; } /* Yellow */
+.save-btn { background-color: #28a745; color: white; } /* Green */
+.cancel-btn { background-color: #6c757d; color: white; } /* Grey */
+.subscribe-btn, .manage-btn { background-color: #007bff; color: white;} /* Blue */
+.unsubscribe-btn { background-color: #dc3545; color: white; } /* Red */
+.refresh-btn { background-color: #17a2b8; color: white; } /* Teal */
+.view-orders-btn { background-color: #545b62; color: white; } /* Dark Grey */
+.admin-view-sub-btn { background-color: #6f42c1; color:white;} /* Indigo */
 
-      <div class="form-group">
-        <label for="phone">Phone Number</label>
-        <input type="tel" id="phone" value={phoneNumber} disabled />
-        <p class="form-hint">Phone number cannot be changed</p>
-      </div>
+.profile-form .form-group { margin-bottom: 1rem; }
+.profile-form label { display: block; margin-bottom: 0.3rem; font-weight: 500; }
+.profile-form input[type="text"], .profile-form textarea {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+.profile-form .form-actions { display: flex; gap: 0.5rem; margin-top:1rem;}
 
-      <div class="form-actions">
-        <button
-          class="btn btn-primary"
-          on:click={handleSubmit}
-          disabled={submitting}
-        >
-          {#if submitting}
-            Saving...
-          {:else}
-            Save Profile
-          {/if}
-        </button>
+.message {
+  padding: 0.8rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+  background-color: #e2f0e8;
+  color: #28a745;
+  border: 1px solid #d0e9dd;
+}
+.message.error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb;}
 
-        {#if profile}
-          <button
-            class="btn btn-outline"
-            on:click={toggleEditMode}
-            disabled={submitting}
-          >
-            Cancel
-          </button>
-        {/if}
-      </div>
-    </div>
-  {/if}
-</div>
-
-<style>
-  .profile-page {
-    padding: 2rem 1rem;
-  }
-
-  h1 {
-    margin-bottom: 2rem;
-    color: #333;
-    text-align: center;
-  }
-
-  .login-prompt {
-    max-width: 500px;
-    margin: 0 auto;
-    padding: 2rem;
-    background-color: #f8f8f8;
+.card {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    text-align: center;
-  }
-
-  .login-form {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1rem;
-  }
-
-  .login-form input {
-    flex: 1;
-  }
-
-  .loading {
-    text-align: center;
-    padding: 3rem;
-    color: #666;
-  }
-
-  .spinner {
-    border: 4px solid rgba(0, 0, 0, 0.1);
-    border-radius: 50%;
-    border-top: 4px solid #5eaa6f;
-    width: 40px;
-    height: 40px;
-    margin: 0 auto 1rem;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
-  .profile-card,
-  .profile-form {
-    max-width: 700px;
-    margin: 0 auto;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    padding: 2rem;
-  }
-
-  .profile-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 2rem;
-  }
-
-  .profile-avatar {
-    margin-right: 1.5rem;
-  }
-
-  .avatar {
-    width: 80px;
-    height: 80px;
-    background-color: #5eaa6f;
-    color: white;
-    font-size: 2.5rem;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-  }
-
-  .profile-details h2 {
-    margin: 0 0 0.5rem;
-    font-size: 1.8rem;
-    color: #333;
-  }
-
-  .phone {
-    color: #666;
-    font-size: 1.1rem;
-  }
-
-  .profile-info {
-    margin-bottom: 2rem;
-  }
-
-  .info-section {
-    margin-bottom: 1.5rem;
-  }
-
-  .info-section h3 {
-    font-size: 1.2rem;
-    color: #666;
-    margin-bottom: 0.5rem;
-  }
-
-  .info-section p {
-    font-size: 1.1rem;
-    color: #333;
-  }
-
-  .profile-actions {
-    display: flex;
-    gap: 1rem;
-  }
-
-  .profile-form h2 {
-    margin-bottom: 1.5rem;
-    font-size: 1.8rem;
-    color: #333;
-    text-align: center;
-  }
-
-  .form-group {
-    margin-bottom: 1.5rem;
-  }
-
-  label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-  }
-
-  .form-hint {
-    font-size: 0.875rem;
-    color: #666;
-    margin-top: 0.25rem;
-  }
-
-  .form-actions {
-    display: flex;
-    gap: 1rem;
-    margin-top: 2rem;
-  }
-
-  .success-message,
-  .error-message {
-    padding: 0.75rem 1rem;
-    border-radius: 4px;
-    margin-bottom: 1.5rem;
-  }
-
-  .success-message {
-    background-color: #d4edda;
-    color: #155724;
-  }
-
-  .error-message {
-    background-color: #f8d7da;
-    color: #721c24;
-  }
-
-  @media (max-width: 768px) {
-    .login-form {
-      flex-direction: column;
-    }
-
-    .profile-header {
-      flex-direction: column;
-      text-align: center;
-    }
-
-    .profile-avatar {
-      margin-right: 0;
-      margin-bottom: 1rem;
-    }
-
-    .profile-actions,
-    .form-actions {
-      flex-direction: column;
-    }
-
-    .profile-actions button,
-    .form-actions button {
-      width: 100%;
-      margin-bottom: 0.5rem;
-    }
-  }
-
-  .subscription-card {
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-top: 0.5rem;
-    border: 1px solid #eee;
-  }
-
-  .subscription-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-  }
-
-  .badge {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: bold;
-  }
-
-  .badge.active {
-    background-color: #5eaa6f;
-    color: white;
-  }
-
-  .subscription-date {
-    font-size: 0.85rem;
-    color: #666;
-  }
-
-  .subscription-details p {
-    margin: 0.5rem 0;
-  }
-
-  .subscription-actions {
-    margin-top: 1rem;
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .btn-sm {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.9rem;
-  }
-
-  .no-subscription {
-    text-align: center;
     padding: 1.5rem;
-    color: #666;
-  }
-
-  .no-subscription p {
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.card h3 {
+    margin-top: 0;
     margin-bottom: 1rem;
-  }
+    font-size: 1.4rem;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5rem;
+}
+.subscription-info p, .order-details p { margin: 0.4rem 0; line-height: 1.6; }
+.subscription-info strong, .order-details strong { color: #555; }
+.subscription-controls { margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem;}
+.order-details ul { list-style: disc; margin-left: 1.5rem; padding-left: 0.5rem; }
+.order-details li { margin-bottom: 0.3rem;}
 
-  /* Add styles for danger button */
-  .btn-danger {
-    background-color: #dc3545; /* Red */
-    color: white;
-    border-color: #dc3545;
-  }
+.login-form { display: flex; gap: 0.5rem; align-items: center; margin-top: 1rem;}
+.login-form input { padding: 0.6rem; border:1px solid #ccc; border-radius:4px; flex-grow:1;}
+.login-form button { background-color: #007bff; color:white; }
 
-  .btn-danger:hover {
-    background-color: #c82333;
-    border-color: #bd2130;
-  }
-
-  /* Add margin to unsubscribe button */
-  .unsubscribe-btn {
-    margin-left: 0.5rem; /* Add space between buttons */
-  }
-
-  /* Add styles for refresh button */
-  .refresh-btn {
-    margin-left: 0.5rem;
-    background-color: #f8f9fa;
-    border-color: #ddd;
-  }
-
-  .refresh-btn:hover {
-    background-color: #e2e6ea;
-    border-color: #ccc;
-  }
-
-  .order-card {
-    background: #f8f9fa;
-    border: 1px solid #eee;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-top: 0.5rem;
-  }
-
-  .order-card ul {
-    margin: 0.5rem 0 0 1rem;
-    padding: 0;
-  }
-</style>
+.profile-page-actions {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+    display: flex;
+    gap: 0.5rem;
+}
+.updated-at {
+    font-size: 0.8em;
+    color: #666;
+    margin-bottom: 0.5rem;
+}
+  </style>

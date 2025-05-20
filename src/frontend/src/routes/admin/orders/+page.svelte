@@ -1,11 +1,18 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getAllOrders } from "$lib/api";
-  import type { Order, OrderStatus } from "$lib/types";
+  import { goto } from "$app/navigation";
+  import { getAllOrders, getProducts, updateOrderStatusAdmin } from "$lib/api";
+  import type { Order, OrderStatus, Product } from "$lib/types";
 
   let orders: Order[] = [];
+  let products: Product[] = [];
+  let productMap = new Map<number, Product>();
   let isLoading = true;
   let loadError = false;
+
+  // For status updates
+  let updatingStatus: { [key: number]: boolean } = {};
+  let statusUpdateError: { [key: number]: string | null } = {};
 
   // Status options for dropdown
   const statusOptions = [
@@ -26,6 +33,11 @@
     loadError = false;
 
     try {
+      // Fetch products first to create a lookup map
+      const productsFromApi = await getProducts();
+      productMap = new Map(productsFromApi.map((p) => [p.id, p]));
+      products = productsFromApi; // Store for other uses if needed
+
       // Fetch orders from backend API
       orders = await getAllOrders();
       isLoading = false;
@@ -36,8 +48,16 @@
     }
   }
 
-  function formatDate(timestamp: number) {
-    const date = new Date(timestamp);
+  function formatDate(timestamp: number | bigint | undefined): string {
+    if (timestamp === undefined || timestamp === null) return "N/A";
+    const numericTimestamp = Number(timestamp);
+    if (numericTimestamp === 0) return "N/A";
+
+    // Assuming timestamp from backend (order.timestamp) is in nanoseconds
+    const date = new Date(numericTimestamp / 1_000_000);
+
+    if (isNaN(date.getTime())) return "Invalid Date";
+
     return date.toLocaleString("en-IN", {
       year: "numeric",
       month: "short",
@@ -47,20 +67,48 @@
     });
   }
 
-  function handleStatusChange(orderId: number, newStatus: string) {
-    // In a real app, call API to update order status
-    console.log(`Updating order ${orderId} to status: ${newStatus}`);
+  async function handleStatusChange(orderId: number, newStatusKey: string) {
+    updatingStatus = { ...updatingStatus, [orderId]: true };
+    statusUpdateError = { ...statusUpdateError, [orderId]: null };
 
-    // Format status to OrderStatus type
-    const statusObject: OrderStatus = { [newStatus]: null } as OrderStatus;
+    // Format status to OrderStatus type (e.g., { Pending: null })
+    const statusObject: OrderStatus = { [newStatusKey]: null } as OrderStatus;
 
-    // Update local state for demo
-    orders = orders.map((order) => {
-      if (order.id === orderId) {
-        return { ...order, status: statusObject };
+    try {
+      const success = await updateOrderStatusAdmin(
+        BigInt(orderId),
+        statusObject
+      );
+
+      if (success) {
+        // Update local state for demo only if API call was successful
+        orders = orders.map((order) => {
+          if (order.id === orderId) {
+            return { ...order, status: statusObject };
+          }
+          return order;
+        });
+        // Optionally show a success toast if not already handled by the API function
+      } else {
+        statusUpdateError = {
+          ...statusUpdateError,
+          [orderId]: "Failed to update status from API.",
+        };
+        // Revert optimistic update if any, or reload orders to get consistent state
+        // For now, we just show an error. The local data will be out of sync until next full load.
       }
-      return order;
-    });
+    } catch (error) {
+      console.error(
+        `Error calling updateOrderStatusAdmin for order ${orderId}:`,
+        error
+      );
+      statusUpdateError = {
+        ...statusUpdateError,
+        [orderId]: "An unexpected error occurred.",
+      };
+    } finally {
+      updatingStatus = { ...updatingStatus, [orderId]: false };
+    }
   }
 
   function handleSelectChange(event: Event, orderId: number) {
@@ -145,8 +193,14 @@
                   <div class="order-items">
                     {#if order.items && order.items.length > 0}
                       {#each order.items as item, i}
+                        {@const productDetail = productMap.get(item.product_id)}
                         <div class="order-item">
-                          Product #{item.product_id} ({item.quantity})
+                          {#if productDetail}
+                            {productDetail.name} ({item.quantity}
+                            {productDetail.unit || ""})
+                          {:else}
+                            Product #{item.product_id} ({item.quantity})
+                          {/if}
                           {#if i < order.items.length - 1},
                           {/if}
                         </div>
@@ -167,20 +221,35 @@
                       .replace(/ /g, '-')}"
                     value={getStatusDisplayName(order.status)}
                     on:change={(e) => handleSelectChange(e, order.id)}
+                    disabled={updatingStatus[order.id]}
                   >
-                    {#each statusOptions as status}
+                    {#each statusOptions as statusKey}
                       <option
-                        value={status}
-                        selected={isCurrentStatus(order.status, status)}
+                        value={statusKey}
+                        selected={isCurrentStatus(order.status, statusKey)}
                       >
-                        {status}
+                        {statusKey.replace(/([A-Z])/g, " $1").trim()}
                       </option>
                     {/each}
                   </select>
+                  {#if updatingStatus[order.id]}
+                    <span class="status-indicator loading-indicator"
+                      >Updating...</span
+                    >
+                  {/if}
+                  {#if statusUpdateError[order.id]}
+                    <span class="status-indicator error-indicator"
+                      >{statusUpdateError[order.id]}</span
+                    >
+                  {/if}
                 </td>
                 <td class="address-cell">{order.delivery_address}</td>
                 <td class="actions-cell">
-                  <button class="action-btn view-btn">View</button>
+                  <button
+                    class="action-btn view-btn"
+                    on:click={() => goto(`/admin/orders/${order.id}`)}
+                    >View</button
+                  >
                 </td>
               </tr>
             {/each}
@@ -269,6 +338,7 @@
     padding: 0.8rem;
     text-align: left;
     border-bottom: 1px solid #eee;
+    vertical-align: middle;
   }
 
   .orders-table th {
@@ -286,6 +356,7 @@
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 0.9rem;
+    font-weight: 500;
   }
 
   .status-placed,
@@ -312,6 +383,18 @@
   .status-cancelled {
     background-color: #ffebee;
     border-color: #ffcdd2;
+  }
+
+  .status-indicator {
+    display: block;
+    font-size: 0.75rem;
+    margin-top: 4px;
+  }
+  .loading-indicator {
+    color: #757575;
+  }
+  .error-indicator {
+    color: #d32f2f;
   }
 
   .address-cell {
