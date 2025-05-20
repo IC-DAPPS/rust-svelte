@@ -145,7 +145,11 @@
 
   async function handleSubmit() {
     if (isAdminViewing) return; // Prevent submission for admin
-    if (!profile) return;
+
+    if (!phoneNumber.trim()) {
+      message = "Phone number is required";
+      return;
+    }
 
     submitting = true;
     message = "";
@@ -168,10 +172,20 @@
       }
 
       if (success) {
+        // Update localStorage with the possibly new phone number
+        localStorage.setItem("userPhoneNumber", phoneNumber);
+
         message = profile
           ? "Profile updated successfully!"
           : "Profile created successfully!";
-        profile = updatedProfile;
+
+        // If we created a new profile, load it
+        if (!profile) {
+          profile = await getProfileByPhone(phoneNumber);
+        } else {
+          profile = updatedProfile;
+        }
+
         isEditMode = false;
       } else {
         message = "Failed to save profile. Please try again.";
@@ -238,14 +252,17 @@
           ? `Viewing Profile: ${name || phoneNumber}`
           : "My Profile"}
       </h2>
-      {#if !isAdminViewing}
-        <button class="logout-btn" on:click={handleLogout}>Logout</button>
-      {/if}
     </div>
 
     {#if loading}
       <p>Loading profile...</p>
     {:else if profile}
+      {#if !isAdminViewing}
+        <div class="profile-actions" style="margin-bottom: 1rem;">
+          <button class="logout-btn" on:click={handleLogout}>Logout</button>
+        </div>
+      {/if}
+
       {#if isAdminViewing}
         <div class="admin-notice">
           <p>
@@ -270,6 +287,14 @@
 
       {#if isEditMode && !isAdminViewing}
         <form on:submit|preventDefault={handleSubmit} class="profile-form">
+          <div class="form-group">
+            <label for="phone">Phone Number:</label>
+            <input type="tel" id="phone" bind:value={phoneNumber} required />
+            <small class="form-hint"
+              >This is the phone number you logged in with. You can change it if
+              needed.</small
+            >
+          </div>
           <div class="form-group">
             <label for="name">Name:</label>
             <input type="text" id="name" bind:value={name} required />
@@ -354,20 +379,41 @@
           Could not load profile for {phoneNumber}. Ensure the phone number is
           correct.
         {:else}
-          Please enter your phone number to login or view your profile.
+          No profile found for this phone number. Please create a new profile.
         {/if}
       </p>
       {#if !isAdminViewing}
-        <div class="login-form">
-          <input
-            type="tel"
-            bind:value={phoneNumber}
-            placeholder="Enter phone number"
-          />
-          <button on:click={handleLogin} disabled={!phoneNumber.trim()}
-            >Login / View Profile</button
-          >
-        </div>
+        <form on:submit|preventDefault={handleSubmit} class="profile-form">
+          <div class="form-group">
+            <label for="phone">Phone Number:</label>
+            <input type="tel" id="phone" bind:value={phoneNumber} required />
+            <small class="form-hint"
+              >This is the phone number you logged in with. You can change it if
+              needed.</small
+            >
+          </div>
+          <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" id="name" bind:value={name} required />
+          </div>
+          <div class="form-group">
+            <label for="address">Address:</label>
+            <textarea id="address" bind:value={address} required></textarea>
+          </div>
+          <div class="form-actions">
+            <button
+              type="submit"
+              class="save-btn"
+              disabled={submitting || !name || !address}
+            >
+              {submitting ? "Creating..." : "Create Profile"}
+            </button>
+            <button type="button" class="cancel-btn" on:click={handleLogout}
+              >Cancel</button
+            >
+          </div>
+        </form>
+        {#if message}<p class="message">{message}</p>{/if}
       {/if}
     {/if}
   {:else}
@@ -505,6 +551,7 @@
     font-weight: 500;
   }
   .profile-form input[type="text"],
+  .profile-form input[type="tel"],
   .profile-form textarea {
     width: 100%;
     padding: 0.6rem;
@@ -587,5 +634,17 @@
     border-top: 1px solid #eee;
     display: flex;
     gap: 0.5rem;
+  }
+
+  .profile-form input[disabled] {
+    background-color: #f5f5f5;
+    color: #666;
+  }
+
+  .form-hint {
+    display: block;
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 0.2rem;
   }
 </style>
