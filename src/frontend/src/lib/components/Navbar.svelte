@@ -76,14 +76,6 @@
             >
           </li>
           <li
-            class:active={$page.url.pathname === "/subscription" ||
-              $page.url.pathname.startsWith("/subscription/")}
-          >
-            <a href="/subscription" on:click={() => (mobileMenuOpen = false)}
-              >{isEnglish ? "Subscription" : "सदस्यता"}</a
-            >
-          </li>
-          <li
             class:active={$page.url.pathname === "/orders" ||
               $page.url.pathname.startsWith("/orders/")}
           >

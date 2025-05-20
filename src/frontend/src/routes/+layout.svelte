@@ -24,7 +24,6 @@
           <ul>
             <li><a href="/">Home</a></li>
             <li><a href="/products">Products</a></li>
-            <li><a href="/subscription">Subscribe</a></li>
             <li><a href="/about">About Us</a></li>
           </ul>
         </div>

@@ -4,7 +4,7 @@
   import type { Order } from "$lib/types";
   import { goto } from "$app/navigation";
   import { toastsStore } from "@dfinity/gix-components";
-  import { cart } from "$lib/stores/cart";
+  import { cartStore } from "$lib/stores/cart";
 
   let orders: Order[] = [];
   let loading = true;

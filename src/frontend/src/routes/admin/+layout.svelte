@@ -100,16 +100,6 @@
           <span>Orders</span>
         </a>
         <a
-          href="/admin/subscriptions"
-          class="nav-item {currentPath.startsWith('/admin/subscriptions')
-            ? 'active'
-            : ''}"
-          on:click={closeMenuAfterNavigation}
-        >
-          <span class="icon">🔄</span>
-          <span>Subscriptions</span>
-        </a>
-        <a
           href="/admin/customers"
           class="nav-item {currentPath.startsWith('/admin/customers')
             ? 'active'

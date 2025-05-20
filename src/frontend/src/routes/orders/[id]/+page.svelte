@@ -1,8 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { page } from "$app/stores";
-  import { getOrderDetails } from "$lib/api";
+  import { getOrderDetails, createOrder } from "$lib/api";
   import type { Order } from "$lib/types";
+  import { toastsStore } from "@dfinity/gix-components";
 
   let order: Order | null = null;
   let loading = true;
@@ -77,6 +78,46 @@
     if ("Delivered" in status) return "Delivered";
     if ("Cancelled" in status) return "Cancelled";
     return "Unknown";
+  }
+
+  async function repeatOrder() {
+    if (!order) return;
+
+    try {
+      // Create order items input from the previous order
+      const orderItems = order.items.map((item) => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+      }));
+
+      // Create new order with same items and delivery address
+      const newOrderId = await createOrder(
+        phoneNumber,
+        orderItems,
+        order.delivery_address
+      );
+
+      if (newOrderId) {
+        toastsStore.show({
+          text: "Order repeated successfully!",
+          level: "success",
+        });
+
+        // Navigate to the orders page
+        window.location.href = "/orders";
+      } else {
+        toastsStore.show({
+          text: "Failed to repeat order",
+          level: "error",
+        });
+      }
+    } catch (error) {
+      console.error("Error repeating order:", error);
+      toastsStore.show({
+        text: "Failed to repeat order",
+        level: "error",
+      });
+    }
   }
 </script>
 
@@ -262,7 +303,9 @@
           <button class="btn btn-secondary">Cancel Order</button>
         {/if}
         {#if "Delivered" in order.status}
-          <button class="btn btn-primary">Reorder</button>
+          <button class="btn btn-primary" on:click={repeatOrder}
+            >Repeat This Order</button
+          >
         {/if}
       </div>
     </div>

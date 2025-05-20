@@ -19,12 +19,6 @@ pub struct UserProfile {
     pub address: String,
     // Store order IDs for user's order history
     pub order_ids: Vec<u64>,
-    // Indicates if user has an active subscription (user can only have one subscription at a time)
-    pub has_active_subscription: bool,
-    pub active_subscription_id: Option<u64>,
-    // Keep other optional fields if needed, e.g., email
-    // pub email: Option<String>,
-    // We can add order history or preferences here later
 }
 
 // --- Order Related Models ---
@@ -63,42 +57,4 @@ pub struct Order {
     pub timestamp: u64, // Timestamp of when the order was created (nanoseconds since epoch)
     pub delivery_address: String, // Delivery address for this specific order
     pub last_updated: u64, // Optional: Timestamp of last status update
-}
-
-// --- Subscription Related Models ---
-
-#[derive(CandidType, Deserialize, Serialize, Clone, Debug, PartialEq)]
-pub enum SubscriptionStatus {
-    Active,
-    Paused,
-    Cancelled,
-}
-
-impl Default for SubscriptionStatus {
-    fn default() -> Self {
-        SubscriptionStatus::Active
-    }
-}
-
-#[derive(CandidType, Deserialize, Serialize, Clone, Debug, Default)]
-pub struct SubscriptionItem {
-    pub product_id: u64,
-    pub quantity: f64,
-    pub price_per_unit_at_subscription: f64, // New field
-}
-
-#[derive(CandidType, Deserialize, Serialize, Clone, Debug)]
-pub struct Subscription {
-    pub id: u64,                   // Unique subscription ID
-    pub user_phone_number: String, // Link to the user
-    pub items: Vec<SubscriptionItem>,
-    pub delivery_days: Vec<String>, // e.g., ["Mon", "Wed", "Fri"] or ["Daily"]
-    pub delivery_time_slot: String, // e.g., "Morning (8AM-10AM)", "Evening (5PM-7PM)"
-    pub delivery_address: String,   // Specific delivery address for this subscription
-    pub start_date: u64,            // Timestamp of when the subscription should ideally start
-    pub status: SubscriptionStatus,
-    pub next_order_date: u64, // Timestamp (date part) for the next scheduled order
-    pub created_at: u64,      // Timestamp of subscription creation
-    pub updated_at: u64,      // Timestamp of last update
-                              // pub end_date: Option<u64>, // Optional: if subscription has a defined end
 }
