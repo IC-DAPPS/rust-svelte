@@ -81,33 +81,32 @@
       <nav class="admin-nav">
         <a
           href="/admin/products"
-          class="nav-item {currentPath.startsWith('/admin/products')
-            ? 'active'
-            : ''}"
+          class="nav-item"
+          class:active={$page.url.pathname.startsWith("/admin/products")}
           on:click={closeMenuAfterNavigation}
         >
-          <span class="icon">📦</span>
-          <span>Products</span>
+          <iconify-icon icon="mdi:package-variant-closed" class="nav-icon"
+          ></iconify-icon>
+          <span>📦 Products</span>
         </a>
         <a
           href="/admin/orders"
-          class="nav-item {currentPath.startsWith('/admin/orders')
-            ? 'active'
-            : ''}"
+          class="nav-item"
+          class:active={$page.url.pathname.startsWith("/admin/orders")}
           on:click={closeMenuAfterNavigation}
         >
-          <span class="icon">📋</span>
-          <span>Orders</span>
+          <iconify-icon icon="mdi:cart-outline" class="nav-icon"></iconify-icon>
+          <span>🛒 Orders</span>
         </a>
         <a
           href="/admin/customers"
-          class="nav-item {currentPath.startsWith('/admin/customers')
-            ? 'active'
-            : ''}"
+          class="nav-item"
+          class:active={$page.url.pathname.startsWith("/admin/customers")}
           on:click={closeMenuAfterNavigation}
         >
-          <span class="icon">👥</span>
-          <span>Customers</span>
+          <iconify-icon icon="mdi:account-group-outline" class="nav-icon"
+          ></iconify-icon>
+          <span>👥 Customers</span>
         </a>
       </nav>
       <div class="admin-footer">
@@ -194,16 +193,24 @@
     padding: 0.8rem 1.5rem;
     color: #ddd;
     text-decoration: none;
-    transition: background-color 0.2s;
+    transition:
+      background-color 0.2s,
+      color 0.2s;
   }
 
   .nav-item:hover {
     background-color: #444;
+    color: #fff;
   }
 
-  .nav-item .icon {
+  .nav-item .nav-icon {
     margin-right: 0.8rem;
-    font-size: 1.2rem;
+    font-size: 1.3em;
+    vertical-align: middle;
+  }
+
+  .nav-item span {
+    vertical-align: middle;
   }
 
   .admin-content {
@@ -297,9 +304,15 @@
   }
 
   .nav-item.active {
-    background-color: #e8f5e9;
-    color: #388e3c;
+    background-color: #5eaa6f;
+    color: #ffffff;
     font-weight: bold;
-    border-left: 4px solid #5eaa6f;
+  }
+
+  .main-content {
+    flex: 1;
+    padding: 2rem;
+    background-color: #f5f5f5;
+    overflow-y: auto;
   }
 </style>

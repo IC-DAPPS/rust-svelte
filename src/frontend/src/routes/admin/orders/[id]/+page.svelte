@@ -32,6 +32,22 @@
     return String(status || "Unknown");
   }
 
+  function getStatusColor(status: any): string {
+    const statusString = getStatusDisplayName(status).toLowerCase();
+    if (statusString.includes("delivered"))
+      return "var(--color-success, #28a745)";
+    if (statusString.includes("pending") || statusString.includes("processing"))
+      return "var(--color-warning, #ffc107)";
+    if (statusString.includes("cancelled") || statusString.includes("failed"))
+      return "var(--color-danger, #dc3545)";
+    if (
+      statusString.includes("shipped") ||
+      statusString.includes("out for delivery")
+    )
+      return "var(--color-info, #17a2b8)";
+    return "var(--color-text-secondary, #6c757d)"; // Default color
+  }
+
   onMount(async () => {
     isLoading = true;
     loadError = null;
@@ -69,7 +85,7 @@
 </script>
 
 <svelte:head>
-  <title>Order Details (ID: {$page.params.id}) - Admin</title>
+  <title>Order No: {$page.params.id} - Admin</title>
 </svelte:head>
 
 <div class="admin-page order-details-page">
@@ -85,8 +101,11 @@
     </div>
   {:else if order}
     <div class="page-header">
-      <h1>Order Details (ID: {String(order.id)})</h1>
-      <a href="/admin/orders" class="back-link button-link">Back to List</a>
+      <h1>
+        Order <span class="order-id-label">No:</span>
+        <span class="order-id-highlight">{String(order.id)}</span>
+      </h1>
+      <a href="/admin/orders" class="back-link button-link" style="background-color: var(--color-success, #28a745); color: black;">Back to List</a>
     </div>
 
     <div class="details-card">
@@ -94,7 +113,13 @@
         <div class="detail-section">
           <h2>Order Information</h2>
           <p><strong>Order ID:</strong> {String(order.id)}</p>
-          <p><strong>Status:</strong> {getStatusDisplayName(order.status)}</p>
+          <p>
+            <strong>Status:</strong>
+            <span
+              style="color: {getStatusColor(order.status)}; font-weight: bold;"
+              >{getStatusDisplayName(order.status)}</span
+            >
+          </p>
           <p><strong>Order Date:</strong> {formatDate(order.timestamp)}</p>
           <p><strong>Last Updated:</strong> {formatDate(order.last_updated)}</p>
           <p><strong>Total Amount:</strong> ₹{order.total_amount.toFixed(2)}</p>
@@ -130,7 +155,7 @@
                 <tr>
                   <td
                     >{productDetail
-                      ? `${productDetail.name} (ID: ${item.product_id})`
+                      ? productDetail.name
                       : `Product ID: ${item.product_id}`}</td
                   >
                   <td>{item.quantity} {productDetail?.unit || ""}</td>
@@ -172,6 +197,18 @@
   .page-header h1 {
     font-size: 1.8rem;
     color: #333;
+    display: flex; /* For aligning label and ID */
+    align-items: baseline; /* Align text nicely */
+  }
+  .order-id-label {
+    font-size: 1.5rem; /* Slightly smaller than ID */
+    color: #555; /* Darker gray for the label */
+    margin-right: 0.3rem;
+    font-weight: normal; /* Label doesn't need to be bold */
+  }
+  .order-id-highlight {
+    color: #5eaa6f; /* Kaniya Dairy green */
+    font-weight: bold;
   }
   .back-link {
     color: #5eaa6f;
@@ -234,6 +271,7 @@
   }
   .items-table th {
     background-color: #f9f9f9;
+    font-weight: 600; /* Make headers bolder */
   }
 
   .loading-container,

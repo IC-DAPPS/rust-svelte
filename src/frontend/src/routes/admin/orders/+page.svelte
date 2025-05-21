@@ -181,7 +181,7 @@
               <th>Date</th>
               <th>Status</th>
               <th>Address</th>
-              <th>Actions</th>
+              <th>Details</th>
             </tr>
           </thead>
           <tbody>

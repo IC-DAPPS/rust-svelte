@@ -73,13 +73,17 @@
     >Orders by {customerProfile?.name || customerPhoneNumber || "Customer"} - Admin</title
   >
 </svelte:head>
-
 <div class="admin-page customer-orders-page">
-  {#if customerPhoneNumber}
-    <h2>Orders by: {customerProfile?.name || customerPhoneNumber}</h2>
-  {:else}
-    <h2>Customer Orders</h2>
-  {/if}
+  <div class="page-header">
+    {#if customerPhoneNumber}
+      <h2>Orders by: {customerProfile?.name || customerPhoneNumber}</h2>
+    {:else}
+      <h2>Customer Orders</h2>
+    {/if}
+    <a href="/admin/customers" class="button-link back-to-list-button" style="background-color: var(--color-success, #28a745);"
+      >Back to Customer List</a
+    >
+  </div>
 
   {#if isLoading}
     <p>Loading orders...</p>
@@ -209,5 +213,28 @@
   }
   .status-badge.cancelled {
     background-color: #d9534f; /* Red */
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem; /* Matches h2 margin-bottom */
+  }
+
+  .back-to-list-button {
+    /* Re-using some styles from order details page if applicable, or define new */
+    padding: 0.6rem 1rem;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: #333; /* Standard text color for button */
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.2s;
+  }
+  .back-to-list-button:hover {
+    background-color: #e0e0e0;
+    text-decoration: none;
   }
 </style>
