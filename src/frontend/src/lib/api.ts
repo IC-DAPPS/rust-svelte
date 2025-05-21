@@ -334,7 +334,7 @@ export async function updateProduct(product: Product): Promise<Product | null> {
 
 export async function getOrderDetailsAdmin(orderId: bigint): Promise<Order | null> {
   try {
-    const result = await backendActor.get_order_details(orderId, "ADMIN");
+    const result = await backendActor.get_order_details_admin(orderId);
     if ("Ok" in result) {
       const order = result.Ok;
       return {

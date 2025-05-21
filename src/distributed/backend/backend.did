@@ -72,6 +72,7 @@ service : {
   get_all_orders : () -> (Result_4) query;
   get_my_orders : (text) -> (Result_4) query;
   get_order_details : (nat64, text) -> (Result_5) query;
+  get_order_details_admin : (nat64) -> (Result_5) query;
   get_products : () -> (vec Product) query;
   get_profile_by_phone : (text) -> (Result_6) query;
   initialize_products : () -> (Result_7);

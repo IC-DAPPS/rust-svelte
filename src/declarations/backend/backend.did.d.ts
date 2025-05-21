@@ -82,6 +82,7 @@ export interface _SERVICE {
   'get_all_orders' : ActorMethod<[], Result_4>,
   'get_my_orders' : ActorMethod<[string], Result_4>,
   'get_order_details' : ActorMethod<[bigint, string], Result_5>,
+  'get_order_details_admin' : ActorMethod<[bigint], Result_5>,
   'get_products' : ActorMethod<[], Array<Product>>,
   'get_profile_by_phone' : ActorMethod<[string], Result_6>,
   'initialize_products' : ActorMethod<[], Result_7>,

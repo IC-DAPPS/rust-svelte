@@ -256,4 +256,12 @@
       transform: rotate(360deg);
     }
   }
+  .items-table-admin img {
+    max-width: 60px;
+    border: 1px solid #eee;
+  }
+  .items-table-admin td,
+  .items-table-admin th {
+    vertical-align: middle;
+  }
 </style>

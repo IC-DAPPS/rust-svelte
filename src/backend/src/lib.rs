@@ -226,6 +226,14 @@ fn get_all_orders() -> Result<Vec<Order>, OrderError> {
     Ok(store::get_all_orders())
 }
 
+#[query]
+fn get_order_details_admin(order_id: u64) -> Result<Order, OrderError> {
+    match store::get_order(order_id) {
+        Some(order) => Ok(order),
+        None => Err(OrderError::OrderNotFound),
+    }
+}
+
 #[update]
 fn update_order_status_admin(order_id: u64, new_status: OrderStatus) -> Result<Order, OrderError> {
     let timestamp = time();

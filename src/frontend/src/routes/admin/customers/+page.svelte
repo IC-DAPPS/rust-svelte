@@ -67,8 +67,8 @@
     );
   });
 
-  function viewCustomerProfile(customerPhoneNumber: string) {
-    goto(`/profile?phone=${customerPhoneNumber}&adminView=true`);
+  function viewCustomerOrders(customerPhoneNumber: string) {
+    goto(`/admin/customers/${customerPhoneNumber}`);
   }
 
   // Removed viewCustomerSubscription and viewCustomerOrders functions
@@ -127,7 +127,7 @@
               <th>Email</th>
               <th>Address</th>
               <th>Customer Since</th>
-              <th>Profile</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -144,9 +144,9 @@
                 >
                 <td class="profile-action-cell">
                   <button
-                    class="action-btn profile-btn"
-                    on:click={() => viewCustomerProfile(customer.phone_number)}
-                    title="View customer's profile">View Profile</button
+                    class="action-btn view-orders-btn"
+                    on:click={() => viewCustomerOrders(customer.phone_number)}
+                    title="View customer's orders">View Orders</button
                   >
                 </td>
               </tr>
@@ -241,6 +241,11 @@
   .profile-action-cell {
     white-space: nowrap;
     text-align: center; /* Center the button in its cell */
+  }
+
+  .view-orders-btn {
+    background-color: #17a2b8; /* Info blue */
+    color: white;
   }
 
   .profile-btn {

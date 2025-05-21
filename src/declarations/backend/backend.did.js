@@ -87,6 +87,7 @@ export const idlFactory = ({ IDL }) => {
         [Result_5],
         ['query'],
       ),
+    'get_order_details_admin' : IDL.Func([IDL.Nat64], [Result_5], ['query']),
     'get_products' : IDL.Func([], [IDL.Vec(Product)], ['query']),
     'get_profile_by_phone' : IDL.Func([IDL.Text], [Result_6], ['query']),
     'initialize_products' : IDL.Func([], [Result_7], []),
