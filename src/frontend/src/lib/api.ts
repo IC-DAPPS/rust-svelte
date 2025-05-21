@@ -73,20 +73,19 @@ export async function addProduct(product: Omit<Product, 'id'>): Promise<Product 
 // Admin functions for customers
 export async function getAllCustomers(): Promise<UserProfile[]> {
   try {
-    // Ab direct admin function ko call karenge
     const result = await backendActor.get_all_customers();
-
-    // Agar result mila toh use return kar denge
-    return result || [];
-
+    return result.map(customer => ({
+      name: customer.name,
+      address: customer.address, 
+      phone_number: customer.phone_number,
+      order_ids: Array.from(customer.order_ids).map(id => Number(id))
+    }));
   } catch (error) {
     console.error("Error fetching customers:", error);
     toastsStore.show({
       text: "Saare customers fetch karne mein error aaya",
       level: "error",
     });
-
-    // Error ke case mein empty array return karenge
     return [];
   }
 }
@@ -94,11 +93,9 @@ export async function getAllCustomers(): Promise<UserProfile[]> {
 // Admin functions for orders
 export async function getAllOrders(): Promise<Order[]> {
   try {
-    // Direct admin function ko call karenge
     const result = await backendActor.get_all_orders();
 
     if ("Ok" in result) {
-      // Backend Order format ko frontend format mein convert karenge
       return result.Ok.map(order => ({
         id: Number(order.id),
         status: order.status,
@@ -136,7 +133,13 @@ export async function getProfileByPhone(phoneNumber: string): Promise<UserProfil
   try {
     const result = await backendActor.get_profile_by_phone(phoneNumber);
     if (result && "Ok" in result) {
-      return result.Ok;
+      const profile = result.Ok;
+      return {
+        name: profile.name,
+        address: profile.address,
+        phone_number: profile.phone_number,
+        order_ids: Array.from(profile.order_ids).map(id => Number(id))
+      };
     }
     return null;
   } catch (error) {
@@ -155,12 +158,11 @@ export async function getProfile(phoneNumber: string): Promise<UserProfile | nul
 
 export async function createProfile(profile: UserProfile): Promise<boolean> {
   try {
-    // Deep clone to ensure we don't modify the original
     const profileToSend = {
       name: profile.name,
       address: profile.address,
       phone_number: profile.phone_number,
-      order_ids: Array.isArray(profile.order_ids) ? [...profile.order_ids] : []
+      order_ids: profile.order_ids.map(id => BigInt(id))
     };
 
     console.log("Creating profile with data:", JSON.stringify(profileToSend));
@@ -196,7 +198,14 @@ export async function createProfile(profile: UserProfile): Promise<boolean> {
 
 export async function updateProfile(profile: UserProfile): Promise<boolean> {
   try {
-    const result = await backendActor.update_profile(profile);
+    const profileToSend = {
+      name: profile.name,
+      address: profile.address,
+      phone_number: profile.phone_number,
+      order_ids: profile.order_ids.map(id => BigInt(id))
+    };
+    
+    const result = await backendActor.update_profile(profileToSend);
     if ("Ok" in result) {
       toastsStore.show({
         text: "Profile updated successfully",
@@ -222,7 +231,12 @@ export async function updateProfile(profile: UserProfile): Promise<boolean> {
 // Orders
 export async function createOrder(phoneNumber: string, items: OrderItemInput[], deliveryAddress: string): Promise<bigint | null> {
   try {
-    const result = await backendActor.create_order(phoneNumber, items, deliveryAddress);
+    const itemsToSend = items.map(item => ({
+      ...item,
+      product_id: BigInt(item.product_id)
+    }));
+    
+    const result = await backendActor.create_order(phoneNumber, itemsToSend, deliveryAddress);
     if ("Ok" in result) {
       toastsStore.show({
         text: "Order created successfully!",
@@ -256,7 +270,6 @@ export async function getMyOrders(phoneNumber: string): Promise<Order[]> {
   try {
     const result = await backendActor.get_my_orders(phoneNumber);
     if ("Ok" in result) {
-      // Backend Order format ko frontend format mein convert karenge
       return result.Ok.map(order => ({
         id: Number(order.id),
         status: order.status,
