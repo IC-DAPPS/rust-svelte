@@ -1,10 +1,13 @@
 <script>
   import "../app.css";
   import Navbar from "$lib/components/Navbar.svelte";
+  import { page } from "$app/stores"; // Import page store
 </script>
 
 <div class="app">
-  <Navbar />
+  {#if !$page.url.pathname.startsWith("/admin")}
+    <Navbar />
+  {/if}
 
   <main>
     <slot />

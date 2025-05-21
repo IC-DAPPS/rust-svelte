@@ -145,6 +145,7 @@
                 <td class="profile-action-cell">
                   <button
                     class="action-btn view-orders-btn"
+                    style="background-color: #0d6efd; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;"
                     on:click={() => viewCustomerOrders(customer.phone_number)}
                     title="View customer's orders">View Orders</button
                   >
