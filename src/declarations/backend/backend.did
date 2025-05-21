@@ -79,4 +79,4 @@ service : {
   is_dev_check : () -> (bool) query;
   update_order_status_admin : (nat64, OrderStatus) -> (Result_5);
   update_profile : (UserProfile) -> (Result_8);
-};
+}

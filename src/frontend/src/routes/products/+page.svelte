@@ -15,6 +15,7 @@
     try {
       products = await getProducts();
       filteredProducts = [...products];
+      cartStore.validateCart(products);
       loading = false;
     } catch (err) {
       console.error("Failed to load products:", err);

@@ -80,6 +80,20 @@ function createCartStore() {
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('dairyCart');
             }
+        },
+
+        // Validate cart items against available products
+        validateCart: (availableProducts: Product[]) => {
+            update(items => {
+                const availableProductIds = new Set(availableProducts.map(p => p.id));
+                const validatedItems = items.filter(item => availableProductIds.has(item.product.id));
+
+                if (validatedItems.length !== items.length) {
+                    saveToLocalStorage(validatedItems);
+                    return validatedItems;
+                }
+                return items; // No change if all items are valid
+            });
         }
     };
 }
