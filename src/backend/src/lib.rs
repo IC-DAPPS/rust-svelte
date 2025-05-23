@@ -198,6 +198,18 @@ fn add_product_admin(payload: AddProductPayload) -> Result<u64, String> {
     store::add_product(product_to_add)
 }
 
+#[update]
+fn update_product_admin(id: u64, payload: AddProductPayload) -> Result<Product, String> {
+    let product_update = Product {
+        id, // Keep the original ID
+        name: payload.name,
+        description: payload.description,
+        price: payload.price,
+        unit: payload.unit,
+    };
+    store::update_product(id, product_update)
+}
+
 // Admin User Management
 
 #[query]

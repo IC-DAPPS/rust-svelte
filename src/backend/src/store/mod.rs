@@ -13,7 +13,7 @@ pub use order::{
     add_order, get_all_orders, get_next_order_id, get_order, get_orders_by_phone,
     update_order_status,
 };
-pub use product::{add_product, get_all_products, get_product_by_id};
+pub use product::{add_product, get_all_products, get_product_by_id, update_product};
 pub use user::{delete_user_profile, get_all_user_profiles, get_user_profile, update_user_profile};
 
 // Common memory ID constants for all store modules

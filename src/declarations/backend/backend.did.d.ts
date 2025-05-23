@@ -62,7 +62,9 @@ export type Result_6 = { 'Ok' : UserProfile } |
   { 'Err' : GetUserDataError };
 export type Result_7 = { 'Ok' : string } |
   { 'Err' : string };
-export type Result_8 = { 'Ok' : null } |
+export type Result_8 = { 'Ok' : Product } |
+  { 'Err' : string };
+export type Result_9 = { 'Ok' : null } |
   { 'Err' : GetUserDataError };
 export interface UserProfile {
   'name' : string,
@@ -88,7 +90,8 @@ export interface _SERVICE {
   'initialize_products' : ActorMethod<[], Result_7>,
   'is_dev_check' : ActorMethod<[], boolean>,
   'update_order_status_admin' : ActorMethod<[bigint, OrderStatus], Result_5>,
-  'update_profile' : ActorMethod<[UserProfile], Result_8>,
+  'update_product_admin' : ActorMethod<[bigint, AddProductPayload], Result_8>,
+  'update_profile' : ActorMethod<[UserProfile], Result_9>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

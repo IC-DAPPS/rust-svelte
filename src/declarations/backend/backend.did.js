@@ -69,7 +69,8 @@ export const idlFactory = ({ IDL }) => {
     'Err' : GetUserDataError,
   });
   const Result_7 = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
-  const Result_8 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : GetUserDataError });
+  const Result_8 = IDL.Variant({ 'Ok' : Product, 'Err' : IDL.Text });
+  const Result_9 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : GetUserDataError });
   return IDL.Service({
     'add_product_admin' : IDL.Func([AddProductPayload], [Result], []),
     'create_order' : IDL.Func(
@@ -97,7 +98,12 @@ export const idlFactory = ({ IDL }) => {
         [Result_5],
         [],
       ),
-    'update_profile' : IDL.Func([UserProfile], [Result_8], []),
+    'update_product_admin' : IDL.Func(
+        [IDL.Nat64, AddProductPayload],
+        [Result_8],
+        [],
+      ),
+    'update_profile' : IDL.Func([UserProfile], [Result_9], []),
   });
 };
 export const init = ({ IDL }) => { return []; };

@@ -76,7 +76,7 @@ export async function getAllCustomers(): Promise<UserProfile[]> {
     const result = await backendActor.get_all_customers();
     return result.map(customer => ({
       name: customer.name,
-      address: customer.address, 
+      address: customer.address,
       phone_number: customer.phone_number,
       order_ids: Array.from(customer.order_ids).map(id => Number(id))
     }));
@@ -204,7 +204,7 @@ export async function updateProfile(profile: UserProfile): Promise<boolean> {
       phone_number: profile.phone_number,
       order_ids: profile.order_ids.map(id => BigInt(id))
     };
-    
+
     const result = await backendActor.update_profile(profileToSend);
     if ("Ok" in result) {
       toastsStore.show({
@@ -235,7 +235,7 @@ export async function createOrder(phoneNumber: string, items: OrderItemInput[], 
       ...item,
       product_id: BigInt(item.product_id)
     }));
-    
+
     const result = await backendActor.create_order(phoneNumber, itemsToSend, deliveryAddress);
     if ("Ok" in result) {
       toastsStore.show({
@@ -340,9 +340,42 @@ export async function getOrderDetails(orderId: bigint, phoneNumber: string): Pro
 }
 
 export async function updateProduct(product: Product): Promise<Product | null> {
-  // Implementation for updating products
-  console.log("Not implemented: updateProduct", product);
-  return null;
+  try {
+    const payload = {
+      name: product.name,
+      unit: product.unit,
+      description: product.description,
+      price: product.price
+    };
+
+    const result = await backendActor.update_product_admin(BigInt(product.id), payload);
+
+    if ('Ok' in result) {
+      const updatedProduct = result.Ok;
+      return {
+        id: Number(updatedProduct.id),
+        name: updatedProduct.name,
+        unit: updatedProduct.unit,
+        description: updatedProduct.description,
+        price: Number(updatedProduct.price),
+        imageUrl: product.imageUrl // Keep the existing image URL
+      };
+    } else {
+      console.error("Failed to update product:", result.Err);
+      toastsStore.show({
+        text: "Failed to update product: " + result.Err,
+        level: "error",
+      });
+      return null;
+    }
+  } catch (error) {
+    console.error("Error updating product:", error);
+    toastsStore.show({
+      text: "Failed to update product",
+      level: "error",
+    });
+    return null;
+  }
 }
 
 export async function getOrderDetailsAdmin(orderId: bigint): Promise<Order | null> {
