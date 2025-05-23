@@ -9,7 +9,7 @@
   <div class="banner">
     <div class="container">
       <h1>About Kaniya Dairy</h1>
-      <p>Delivering fresh dairy products since 2003</p>
+      <p>Delivering fresh dairy products since 2010</p>
     </div>
   </div>
 
@@ -18,7 +18,7 @@
       <div class="about-content">
         <h2>Our Story</h2>
         <p>
-          Kaniya Dairy has been serving the Suhagi, Jabalpur area for over 20
+          Kaniya Dairy has been serving the Suhagi, Jabalpur area for over 15
           years. What started as a small family business has grown into a
           trusted local dairy supplier, known for our commitment to quality and
           freshness.
@@ -71,10 +71,10 @@
           <div class="member-photo">
             <div class="placeholder-image">Photo</div>
           </div>
-          <h3>Vishnu Vishwakarma</h3>
+          <h3>Patel Sir</h3>
           <p class="member-title">Founder & CEO</p>
           <p class="member-bio">
-            Started Kaniya Dairy with a passion for bringing fresh dairy
+            Started Kaniya Dairy with a vision to provide pure and fresh dairy
             products to the community.
           </p>
         </div>
@@ -82,11 +82,10 @@
           <div class="member-photo">
             <div class="placeholder-image">Photo</div>
           </div>
-          <h3>Ramesh Kumar</h3>
-          <p class="member-title">Production Manager</p>
+          <h3>Vishnu Vishwakarma</h3>
+          <p class="member-title">Software Engineer</p>
           <p class="member-bio">
-            Oversees our production processes to ensure the highest quality
-            standards.
+            Developed the Kaniya Dairy app to make ordering dairy products more convenient.
           </p>
         </div>
         <div class="team-member">
