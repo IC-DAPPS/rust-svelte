@@ -229,7 +229,31 @@
           </div>
 
           <div class="tracking-info">
-            <h3>Order Tracking</h3>
+            <h3>
+              Order Tracking
+              <button
+                class="btn btn-sm btn-outline-secondary refresh-btn"
+                on:click={loadOrderDetails}
+                title="Refresh order status"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                  class="bi bi-arrow-clockwise"
+                  viewBox="0 0 16 16"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"
+                  />
+                  <path
+                    d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"
+                  />
+                </svg>
+              </button>
+            </h3>
             <div class="tracking-timeline">
               <div
                 class="timeline-item"
@@ -312,7 +336,7 @@
 
     <div class="need-help">
       <h3>Need Help?</h3>
-      <p>Call us at: <a href="tel:07089345065">07089345065</a></p>
+      <p>Call us at: <a href="tel:9399377528">9399377528</a></p>
     </div>
   {/if}
 </div>
@@ -442,9 +466,12 @@
   }
 
   h3 {
-    margin: 0 0 1.5rem;
+    margin-bottom: 1rem;
     font-size: 1.4rem;
     color: #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
   .items-table {
@@ -549,6 +576,12 @@
 
   .need-help p {
     margin: 0;
+  }
+
+  .refresh-btn {
+    margin-left: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
   }
 
   @media (max-width: 768px) {
