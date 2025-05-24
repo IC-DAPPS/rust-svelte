@@ -1,149 +1,262 @@
 <script lang="ts">
+  import { isEnglish } from "$lib/stores/languageStore";
 </script>
 
 <svelte:head>
-  <title>About Us - Kaniya Dairy</title>
+  <title>{$isEnglish ? "About Us" : "हमारे बारे में"} - Kaniya Dairy</title>
 </svelte:head>
 
 <div class="about-page">
   <div class="banner">
     <div class="container">
-      <h1>About Kaniya Dairy</h1>
-      <p>Delivering fresh dairy products since 2010</p>
+      <h1>{$isEnglish ? "About Kaniya Dairy" : "कानिया डेयरी के बारे में"}</h1>
+      <p>
+        {$isEnglish
+          ? "Delivering fresh dairy products since 2010"
+          : "२०१० से ताजा डेयरी उत्पाद वितरित कर रहे हैं"}
+      </p>
     </div>
   </div>
 
   <div class="container">
     <section class="about-section">
       <div class="about-content">
-        <h2>Our Story</h2>
-        <p>
-          Kaniya Dairy has been serving the Suhagi, Jabalpur area for over 15
-          years. What started as a small family business has grown into a
-          trusted local dairy supplier, known for our commitment to quality and
-          freshness.
-        </p>
-        <p>
-          We believe in providing our customers with the purest dairy products,
-          sourced directly from local farms and delivered fresh to your doorstep
-          every day.
-        </p>
+        <h2>{$isEnglish ? "Our Story" : "हमारी कहानी"}</h2>
+        {#if $isEnglish}
+          <p>
+            Kaniya Dairy has been serving the Suhagi, Jabalpur area for over 15
+            years. What started as a small family business has grown into a
+            trusted local dairy supplier, known for our commitment to quality
+            and freshness.
+          </p>
+          <p>
+            We believe in providing our customers with the purest dairy
+            products, sourced directly from local farms and delivered fresh to
+            your doorstep every day.
+          </p>
+        {:else}
+          <p>
+            कानिया डेयरी १५ वर्षों से अधिक समय से सुहागी, जबलपुर क्षेत्र में
+            सेवा प्रदान कर रही है। एक छोटे पारिवारिक व्यवसाय के रूप में जो शुरू
+            हुआ वह गुणवत्ता और ताजगी के प्रति हमारी प्रतिबद्धता के लिए जाने जाने
+            वाले एक विश्वसनीय स्थानीय डेयरी आपूर्तिकर्ता के रूप में विकसित हुआ
+            है।
+          </p>
+          <p>
+            हम अपने ग्राहकों को शुद्धतम डेयरी उत्पाद प्रदान करने में विश्वास
+            करते हैं, जो सीधे स्थानीय खेतों से प्राप्त होते हैं और हर दिन आपके
+            दरवाजे पर ताजा पहुंचाए जाते हैं।
+          </p>
+        {/if}
       </div>
       <div class="about-image">
-        <div class="placeholder-image">Image</div>
+        <div class="placeholder-image">{$isEnglish ? "Image" : "छवि"}</div>
       </div>
     </section>
 
     <section class="mission-section">
-      <h2>Our Mission</h2>
+      <h2>{$isEnglish ? "Our Mission" : "हमारा मिशन"}</h2>
       <div class="mission-cards">
         <div class="mission-card">
           <div class="icon">🌱</div>
-          <h3>Fresh & Pure</h3>
-          <p>
-            We're committed to providing the freshest dairy products with no
-            preservatives or additives.
-          </p>
+          <h3>{$isEnglish ? "Fresh & Pure" : "ताजा और शुद्ध"}</h3>
+          {#if $isEnglish}
+            <p>
+              We're committed to providing the freshest dairy products with no
+              preservatives or additives.
+            </p>
+          {:else}
+            <p>
+              हम बिना किसी संरक्षक या योजक के सबसे ताज़ी डेयरी उत्पाद प्रदान
+              करने के लिए प्रतिबद्ध हैं।
+            </p>
+          {/if}
         </div>
         <div class="mission-card">
           <div class="icon">🐄</div>
-          <h3>Locally Sourced</h3>
-          <p>
-            All our milk comes from well-cared-for cows at local farms within
-            30km of Jabalpur.
-          </p>
+          <h3>{$isEnglish ? "Locally Sourced" : "स्थानीय रूप से प्राप्त"}</h3>
+          {#if $isEnglish}
+            <p>
+              All our milk comes from well-cared-for cows at local farms within
+              30km of Jabalpur.
+            </p>
+          {:else}
+            <p>
+              हमारा सारा दूध जबलपुर के ३० किलोमीटर के दायरे में स्थित स्थानीय
+              खेतों में अच्छी तरह से देखभाल की जाने वाली गायों से आता है।
+            </p>
+          {/if}
         </div>
         <div class="mission-card">
           <div class="icon">♻️</div>
-          <h3>Sustainable Practices</h3>
-          <p>
-            We use eco-friendly packaging and implement sustainable farming
-            practices.
-          </p>
+          <h3>{$isEnglish ? "Sustainable Practices" : "सतत अभ्यास"}</h3>
+          {#if $isEnglish}
+            <p>
+              We use eco-friendly packaging and implement sustainable farming
+              practices.
+            </p>
+          {:else}
+            <p>
+              हम पर्यावरण के अनुकूल पैकेजिंग का उपयोग करते हैं और टिकाऊ कृषि
+              पद्धतियों को लागू करते हैं।
+            </p>
+          {/if}
         </div>
       </div>
     </section>
 
     <section class="team-section">
-      <h2>Meet Our Team</h2>
+      <h2>{$isEnglish ? "Meet Our Team" : "हमारी टीम से मिलें"}</h2>
       <div class="team-members">
         <div class="team-member">
           <div class="member-photo">
-            <div class="placeholder-image">Photo</div>
+            <div class="placeholder-image">
+              {$isEnglish ? "Photo" : "तस्वीर"}
+            </div>
           </div>
-          <h3>Patel Sir</h3>
-          <p class="member-title">Founder & CEO</p>
-          <p class="member-bio">
-            Started Kaniya Dairy with a vision to provide pure and fresh dairy
-            products to the community.
+          <h3>{$isEnglish ? "Patel Sir" : "पटेल सर"}</h3>
+          <p class="member-title">
+            {$isEnglish ? "Founder & CEO" : "संस्थापक और सीईओ"}
           </p>
+          {#if $isEnglish}
+            <p class="member-bio">
+              Started Kaniya Dairy with a vision to provide pure and fresh dairy
+              products to the community.
+            </p>
+          {:else}
+            <p class="member-bio">
+              समुदाय को शुद्ध और ताज़ा डेयरी उत्पाद प्रदान करने की दृष्टि से
+              कानिया डेयरी शुरू की।
+            </p>
+          {/if}
         </div>
         <div class="team-member">
           <div class="member-photo">
-            <div class="placeholder-image">Photo</div>
+            <div class="placeholder-image">
+              {$isEnglish ? "Photo" : "तस्वीर"}
+            </div>
           </div>
-          <h3>Vishnu Vishwakarma</h3>
-          <p class="member-title">Software Engineer</p>
-          <p class="member-bio">
-            Developed the Kaniya Dairy app to make ordering dairy products more convenient.
+          <h3>{$isEnglish ? "Vishnu Vishwakarma" : "विष्णु विश्वकर्मा"}</h3>
+          <p class="member-title">
+            {$isEnglish ? "Software Engineer" : "सॉफ्टवेयर इंजीनियर"}
           </p>
+          {#if $isEnglish}
+            <p class="member-bio">
+              Developed the Kaniya Dairy app to make ordering dairy products
+              more convenient.
+            </p>
+          {:else}
+            <p class="member-bio">
+              डेयरी उत्पादों को ऑर्डर करना अधिक सुविधाजनक बनाने के लिए कानिया
+              डेयरी ऐप विकसित किया।
+            </p>
+          {/if}
         </div>
         <div class="team-member">
           <div class="member-photo">
-            <div class="placeholder-image">Photo</div>
+            <div class="placeholder-image">
+              {$isEnglish ? "Photo" : "तस्वीर"}
+            </div>
           </div>
-          <h3>Sunita Patel</h3>
-          <p class="member-title">Delivery Coordinator</p>
-          <p class="member-bio">
-            Ensures timely and efficient delivery of our products to all
-            customers.
+          <h3>{$isEnglish ? "Sunita Patel" : "सुनीता पटेल"}</h3>
+          <p class="member-title">
+            {$isEnglish ? "Delivery Coordinator" : "वितरण समन्वयक"}
           </p>
+          {#if $isEnglish}
+            <p class="member-bio">
+              Ensures timely and efficient delivery of our products to all
+              customers.
+            </p>
+          {:else}
+            <p class="member-bio">
+              सभी ग्राहकों को हमारे उत्पादों की समय पर और कुशल डिलीवरी सुनिश्चित
+              करता है।
+            </p>
+          {/if}
         </div>
       </div>
     </section>
 
     <section class="testimonials-section">
-      <h2>What Our Customers Say</h2>
+      <h2>
+        {$isEnglish ? "What Our Customers Say" : "हमारे ग्राहक क्या कहते हैं"}
+      </h2>
       <div class="testimonials">
         <div class="testimonial">
-          <div class="quote">
-            "I've been buying milk from Kaniya Dairy for over 10 years. Nothing
-            compares to their freshness and taste!"
-          </div>
-          <div class="author">- Ravi Sharma, Suhagi</div>
+          {#if $isEnglish}
+            <div class="quote">
+              "I've been buying milk from Kaniya Dairy for over 10 years.
+              Nothing compares to their freshness and taste!"
+            </div>
+            <div class="author">- Ravi Sharma, Suhagi</div>
+          {:else}
+            <div class="quote">
+              "मैं १० से अधिक वर्षों से कानिया डेयरी से दूध खरीद रहा हूँ। उनकी
+              ताजगी और स्वाद का कोई मुकाबला नहीं!"
+            </div>
+            <div class="author">- रवि शर्मा, सुहागी</div>
+          {/if}
         </div>
         <div class="testimonial">
-          <div class="quote">
-            "Their paneer is absolutely amazing. My family loves it and we order
-            it every week."
-          </div>
-          <div class="author">- Priya Tiwari, Jabalpur</div>
+          {#if $isEnglish}
+            <div class="quote">
+              "Their paneer is absolutely amazing. My family loves it and we
+              order it every week."
+            </div>
+            <div class="author">- Priya Tiwari, Jabalpur</div>
+          {:else}
+            <div class="quote">
+              "उनका पनीर बिल्कुल अद्भुत है। मेरा परिवार इसे पसंद करता है और हम
+              इसे हर हफ्ते ऑर्डर करते हैं।"
+            </div>
+            <div class="author">- प्रिया तिवारी, जबलपुर</div>
+          {/if}
         </div>
         <div class="testimonial">
-          <div class="quote">
-            "The subscription service makes my life so much easier. Fresh milk
-            delivered daily without having to remember to order."
-          </div>
-          <div class="author">- Amit Patel, Suhagi</div>
+          {#if $isEnglish}
+            <div class="quote">
+              "The subscription service makes my life so much easier. Fresh milk
+              delivered daily without having to remember to order."
+            </div>
+            <div class="author">- Amit Patel, Suhagi</div>
+          {:else}
+            <div class="quote">
+              "सदस्यता सेवा मेरे जीवन को बहुत आसान बनाती है। ऑर्डर करने के लिए
+              याद किए बिना प्रतिदिन ताजा दूध पहुंचाया जाता है।"
+            </div>
+            <div class="author">- अमित पटेल, सुहागी</div>
+          {/if}
         </div>
       </div>
     </section>
 
     <section class="contact-section">
-      <h2>Contact Us</h2>
+      <h2>{$isEnglish ? "Contact Us" : "हमसे संपर्क करें"}</h2>
       <div class="contact-details">
         <div class="contact-info">
-          <h3>Visit Our Shop</h3>
-          <p>Kaniya Dairy Shop</p>
-          <p>Behind TI Bunglow</p>
-          <p>Suhagi, Jabalpur</p>
-          <p>Madhya Pradesh, 482001</p>
-          <p class="contact-phone">Phone: 07089345065</p>
-          <p>Email: info@kaniyadairy.com</p>
-          <p>Hours: 6:00 AM - 8:00 PM (Daily)</p>
+          <h3>{$isEnglish ? "Visit Our Shop" : "हमारी दुकान पर जाएँ"}</h3>
+          <p>{$isEnglish ? "Kaniya Dairy Shop" : "कानिया डेयरी की दुकान"}</p>
+          <p>{$isEnglish ? "Behind TI Bunglow" : "टी.आई. बंगले के पीछे"}</p>
+          <p>{$isEnglish ? "Suhagi, Jabalpur" : "सुहागी, जबलपुर"}</p>
+          <p>{$isEnglish ? "Madhya Pradesh, 482001" : "मध्य प्रदेश, ४८२००१"}</p>
+          <p class="contact-phone">
+            {$isEnglish ? "Phone: 07089345065" : "फ़ोन: ०७०८९३४५०६५"}
+          </p>
+          <p>
+            {$isEnglish
+              ? "Email: info@kaniyadairy.com"
+              : "ईमेल: info@kaniyadairy.com"}
+          </p>
+          <p>
+            {$isEnglish
+              ? "Hours: 6:00 AM - 8:00 PM (Daily)"
+              : "समय: सुबह ६:०० - रात ८:०० (प्रतिदिन)"}
+          </p>
         </div>
         <div class="contact-map">
-          <div class="placeholder-map">Map Location</div>
+          <div class="placeholder-map">
+            {$isEnglish ? "Map Location" : "मानचित्र स्थान"}
+          </div>
         </div>
       </div>
     </section>

@@ -4,6 +4,7 @@
   import { onMount } from "svelte";
   import { getProfile } from "$lib/api";
   import type { UserProfile } from "$lib/types";
+  import { isEnglish } from "$lib/stores/languageStore";
 
   let mobileMenuOpen = false;
   let isLoggedIn = false;
@@ -14,10 +15,8 @@
     mobileMenuOpen = !mobileMenuOpen;
   }
 
-  let isEnglish = true;
-
   function toggleLanguage() {
-    isEnglish = !isEnglish;
+    isEnglish.update((value) => !value);
     // In a real implementation, this would trigger language switching
   }
 
@@ -64,7 +63,7 @@
         <ul class="nav-menu">
           <li class:active={$page.url.pathname === "/"}>
             <a href="/" on:click={() => (mobileMenuOpen = false)}
-              >{isEnglish ? "Home" : "होम"}</a
+              >{$isEnglish ? "Home" : "होम"}</a
             >
           </li>
           <li
@@ -72,7 +71,7 @@
               $page.url.pathname.startsWith("/products/")}
           >
             <a href="/products" on:click={() => (mobileMenuOpen = false)}
-              >{isEnglish ? "Products" : "उत्पाद"}</a
+              >{$isEnglish ? "Products" : "उत्पाद"}</a
             >
           </li>
           <li
@@ -80,7 +79,7 @@
               $page.url.pathname.startsWith("/orders/")}
           >
             <a href="/orders" on:click={() => (mobileMenuOpen = false)}
-              >{isEnglish ? "My Orders" : "मेरे ऑर्डर"}</a
+              >{$isEnglish ? "My Orders" : "मेरे ऑर्डर"}</a
             >
           </li>
           <li
@@ -88,14 +87,14 @@
               $page.url.pathname.startsWith("/about/")}
           >
             <a href="/about" on:click={() => (mobileMenuOpen = false)}
-              >{isEnglish ? "About Us" : "हमारे बारे में"}</a
+              >{$isEnglish ? "About Us" : "हमारे बारे में"}</a
             >
           </li>
         </ul>
 
         <div class="nav-actions">
           <button class="lang-toggle" on:click={toggleLanguage}>
-            {isEnglish ? "हिंदी" : "English"}
+            {$isEnglish ? "हिंदी" : "English"}
           </button>
 
           <a
