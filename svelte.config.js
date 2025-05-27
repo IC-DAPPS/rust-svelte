@@ -15,6 +15,9 @@ const config = {
 			lib: 'src/frontend/src/lib',
 			routes: 'src/frontend/src/routes',
 			appTemplate: 'src/frontend/src/app.html',
+		},
+		prerender: {
+			entries: [] // Disable prerendering by providing empty entries
 		}
 	},
 };

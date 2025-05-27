@@ -343,6 +343,37 @@ fn is_dev_check() -> bool {
     is_dev().is_ok()
 }
 
+// Added pre_upgrade and post_upgrade hooks for stable storage
+#[ic_cdk::pre_upgrade]
+fn pre_upgrade() {
+    // Optionally, you can serialize and save data here if it's not already in stable structures.
+    // For ic-stable-structures, if all data is in StableBTreeMap, StableVec, etc.,
+    // this function can often be left empty. The structures themselves live in stable memory.
+    // However, some developers choose to explicitly take()/replace() the RefCell contents
+    // of their state here and store them with ic_cdk::storage::stable_save, then restore
+    // in post_upgrade. This is a more robust pattern if you have complex state management.
+    // For this example, we'll assume direct use of stable structures which persist
+    // across upgrades without explicit saving/loading here, as long as MEMORY_MANAGER is re-init.
+}
+
+#[ic_cdk::post_upgrade]
+fn post_upgrade() {
+    // Re-initialize the MEMORY_MANAGER after an upgrade.
+    // This is crucial for ic-stable-structures to correctly re-map the stable memory.
+    store::memory::MEMORY_MANAGER.with(|mm| {
+        *mm.borrow_mut() = ic_stable_structures::memory_manager::MemoryManager::init(
+            ic_stable_structures::DefaultMemoryImpl::default(),
+        );
+    });
+    // After the memory manager is re-initialized, your StableBTreeMaps, StableVecs, etc.,
+    // in the store modules will be able to reload their data from stable memory after an upgrade
+    // when they are accessed (typically via `STATE.with(|s| s.borrow().get(...)`).
+    // If you have an explicit initialization function for your state that needs to be called
+    // after an upgrade (e.g., to repopulate runtime caches from stable storage), call it here.
+    // For example, if you had a function like store::reinit_state_after_upgrade():
+    // store::reinit_state_after_upgrade();
+}
+
 #[test]
 fn generate_candid() {
     candid::export_service!();

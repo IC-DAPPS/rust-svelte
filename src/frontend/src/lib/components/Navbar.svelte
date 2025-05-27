@@ -1,15 +1,10 @@
 <script lang="ts">
   import { cartItemCount, cartTotal } from "$lib/stores/cart";
   import { page } from "$app/stores";
-  import { onMount } from "svelte";
-  import { getProfile } from "$lib/api";
-  import type { UserProfile } from "$lib/types";
   import { isEnglish } from "$lib/stores/languageStore";
+  import { userStore } from "$lib/stores/userStore";
 
   let mobileMenuOpen = false;
-  let isLoggedIn = false;
-  let userProfile: UserProfile | null = null;
-  let userFirstName = "";
 
   function toggleMobileMenu() {
     mobileMenuOpen = !mobileMenuOpen;
@@ -17,113 +12,96 @@
 
   function toggleLanguage() {
     isEnglish.update((value) => !value);
-    // In a real implementation, this would trigger language switching
   }
-
-  onMount(async () => {
-    // Check if user is logged in
-    const storedPhoneNumber = localStorage.getItem("userPhoneNumber");
-    isLoggedIn = !!storedPhoneNumber;
-
-    if (isLoggedIn && storedPhoneNumber) {
-      try {
-        userProfile = await getProfile(storedPhoneNumber);
-        if (userProfile && userProfile.name) {
-          // Get first name only
-          userFirstName = userProfile.name.split(" ")[0];
-        }
-      } catch (error) {
-        console.error("Failed to load user profile for navbar:", error);
-      }
-    }
-  });
 </script>
 
-<nav class="navbar">
-  <div class="container">
-    <div class="navbar-content">
-      <a href="/" class="logo">
-        <span class="logo-text">Kaniya Dairy</span>
-      </a>
+{#if !$userStore.loading}
+  <nav class="navbar">
+    <div class="container">
+      <div class="navbar-content">
+        <a href="/" class="logo">
+          <span class="logo-text">Kaniya Dairy</span>
+        </a>
 
-      <button
-        class="mobile-menu-toggle"
-        on:click={toggleMobileMenu}
-        aria-expanded={mobileMenuOpen}
-      >
-        <span class="sr-only">Menu</span>
-        <div class="hamburger" class:open={mobileMenuOpen}>
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-      </button>
+        <button
+          class="mobile-menu-toggle"
+          on:click={toggleMobileMenu}
+          aria-expanded={mobileMenuOpen}
+        >
+          <span class="sr-only">Menu</span>
+          <div class="hamburger" class:open={mobileMenuOpen}>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </button>
 
-      <div class="menu-container" class:open={mobileMenuOpen}>
-        <ul class="nav-menu">
-          <li class:active={$page.url.pathname === "/"}>
-            <a href="/" on:click={() => (mobileMenuOpen = false)}
-              >{$isEnglish ? "Home" : "होम"}</a
+        <div class="menu-container" class:open={mobileMenuOpen}>
+          <ul class="nav-menu">
+            <li class:active={$page.url.pathname === "/"}>
+              <a href="/" on:click={() => (mobileMenuOpen = false)}
+                >{$isEnglish ? "Home" : "होम"}</a
+              >
+            </li>
+            <li
+              class:active={$page.url.pathname === "/products" ||
+                $page.url.pathname.startsWith("/products/")}
             >
-          </li>
-          <li
-            class:active={$page.url.pathname === "/products" ||
-              $page.url.pathname.startsWith("/products/")}
-          >
-            <a href="/products" on:click={() => (mobileMenuOpen = false)}
-              >{$isEnglish ? "Products" : "उत्पाद"}</a
+              <a href="/products" on:click={() => (mobileMenuOpen = false)}
+                >{$isEnglish ? "Products" : "उत्पाद"}</a
+              >
+            </li>
+            <li
+              class:active={$page.url.pathname === "/orders" ||
+                $page.url.pathname.startsWith("/orders/")}
             >
-          </li>
-          <li
-            class:active={$page.url.pathname === "/orders" ||
-              $page.url.pathname.startsWith("/orders/")}
-          >
-            <a href="/orders" on:click={() => (mobileMenuOpen = false)}
-              >{$isEnglish ? "My Orders" : "मेरे ऑर्डर"}</a
+              <a href="/orders" on:click={() => (mobileMenuOpen = false)}
+                >{$isEnglish ? "My Orders" : "मेरे ऑर्डर"}</a
+              >
+            </li>
+            <li
+              class:active={$page.url.pathname === "/about" ||
+                $page.url.pathname.startsWith("/about/")}
             >
-          </li>
-          <li
-            class:active={$page.url.pathname === "/about" ||
-              $page.url.pathname.startsWith("/about/")}
-          >
-            <a href="/about" on:click={() => (mobileMenuOpen = false)}
-              >{$isEnglish ? "About Us" : "हमारे बारे में"}</a
+              <a href="/about" on:click={() => (mobileMenuOpen = false)}
+                >{$isEnglish ? "About Us" : "हमारे बारे में"}</a
+              >
+            </li>
+          </ul>
+
+          <div class="nav-actions">
+            <button class="lang-toggle" on:click={toggleLanguage}>
+              {$isEnglish ? "हिंदी" : "English"}
+            </button>
+
+            <a
+              href="/cart"
+              class="cart-button"
+              on:click={() => (mobileMenuOpen = false)}
             >
-          </li>
-        </ul>
+              <span class="cart-icon">🛒</span>
+              {#if $cartItemCount > 0}
+                <span class="cart-count">{$cartItemCount}</span>
+              {/if}
+              <span class="cart-total">₹{$cartTotal.toFixed(2)}</span>
+            </a>
 
-        <div class="nav-actions">
-          <button class="lang-toggle" on:click={toggleLanguage}>
-            {$isEnglish ? "हिंदी" : "English"}
-          </button>
-
-          <a
-            href="/cart"
-            class="cart-button"
-            on:click={() => (mobileMenuOpen = false)}
-          >
-            <span class="cart-icon">🛒</span>
-            {#if $cartItemCount > 0}
-              <span class="cart-count">{$cartItemCount}</span>
-            {/if}
-            <span class="cart-total">₹{$cartTotal.toFixed(2)}</span>
-          </a>
-
-          <a
-            href="/profile"
-            class="profile-link"
-            on:click={() => (mobileMenuOpen = false)}
-          >
-            <span class="profile-icon">👤</span>
-            {#if isLoggedIn && userFirstName}
-              <span class="user-name">{userFirstName}</span>
-            {/if}
-          </a>
+            <a
+              href="/profile"
+              class="profile-link"
+              on:click={() => (mobileMenuOpen = false)}
+            >
+              <span class="profile-icon">👤</span>
+              {#if $userStore.isLoggedIn && $userStore.firstName}
+                <span class="user-name">{$userStore.firstName}</span>
+              {/if}
+            </a>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</nav>
+  </nav>
+{/if}
 
 <style>
   .navbar {

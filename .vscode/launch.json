@@ -1,0 +1,26 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Frontend (Chrome)",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:5173",
+            "webRoot": "${workspaceFolder}/src/frontend",
+            "sourceMaps": true,
+            "userDataDir": "${workspaceFolder}/.vscode/chrome-debug-data",
+            "preLaunchTask": "npm:dev"
+        },
+        {
+            "name": "Debug Backend Canister",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/wasm32-unknown-unknown/debug/backend.wasm",
+            "sourceLanguages": [
+                "rust"
+            ],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "dfx-build-backend"
+        }
+    ]
+}
