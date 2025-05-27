@@ -98,23 +98,23 @@ test.describe('Kaniya Dairy E2E Test Suite', () => {
         // Add to Cart Flow
         await test.step('Add products to cart', async () => {
             // Product 1
-            const firstProductAddToCartButton = page.locator('div:nth-child(1) > .product-info > .product-actions > .add-to-cart-button');
+            const firstProductAddToCartButton = page.locator('div:nth-child(1) > .product-info > .product-actions > .add-to-cart');
             await expect(firstProductAddToCartButton).toBeVisible({ timeout: 10000 }); // Wait for the button to appear (10s)
             await firstProductAddToCartButton.click();
             // Product 2
-            await page.locator('div:nth-child(2) > .product-info > .product-actions > .add-to-cart-button').click();
+            await page.locator('div:nth-child(2) > .product-info > .product-actions > .add-to-cart').click();
 
             // Product 3 - select fraction and add
             await page.locator('div:nth-child(3) > .product-info > .product-actions > .quantity-section > .fraction-options > button:nth-child(2)').click(); // selects 0.5
             await page.pause();
-            await page.locator('div:nth-child(3) > .product-info > .product-actions > .add-to-cart-button').click();
+            await page.locator('div:nth-child(3) > .product-info > .product-actions > .add-to-cart').click();
 
 
             // Product 4 - select fraction and add
             // Assuming the first "Add to Cart" button is for the 4th product after the previous actions.
             // This might be brittle, consider more specific selectors if product cards are dynamic.
             await page.locator('div:nth-child(4) > .product-info > .product-actions > .quantity-section > .fraction-options > button:nth-child(2)').click(); // selects 0.5
-            await page.locator('div:nth-child(4) > .product-info > .product-actions > .add-to-cart-button').click();
+            await page.locator('div:nth-child(4) > .product-info > .product-actions > .add-to-cart').click();
 
             // Product 5 - this seems to be clicking the same button again for product 4. Assuming it means adding more of product 4 or this is an error in generated script.
             // For safety, let's assume it's adding more of 4th item or a 5th if the previous was specific.
@@ -125,17 +125,17 @@ test.describe('Kaniya Dairy E2E Test Suite', () => {
             // Or if it is repeatedly clicking the same product's add button.
             // The original selector was "first()", so it might be re-evaluating.
             // This part is ambiguous from codegen. Assuming another distinct product's "Add to Cart"
-            await page.locator('div:nth-child(5) > .product-info > .product-actions > .add-to-cart-button').click();
+            await page.locator('div:nth-child(5) > .product-info > .product-actions > .add-to-cart').click();
 
 
             // Product 6
             await page.locator('div:nth-child(6) > .product-info > .product-actions > .quantity-section > .fraction-options > button').first().click(); // selects 0.25
-            await page.locator('div:nth-child(6) > .product-info > .product-actions > .add-to-cart-button').click();
+            await page.locator('div:nth-child(6) > .product-info > .product-actions > .add-to-cart').click();
 
             // Product 7 - with quantity input
             await page.locator('div:nth-child(7) > .product-info > .product-actions > .quantity-section > .quantity-control > .quantity-input').click();
             await page.locator('div:nth-child(7) > .product-info > .product-actions > .quantity-section > .quantity-control > .quantity-input').fill('1.5');
-            await page.locator('div:nth-child(7) > .product-info > .product-actions > .add-to-cart-button').click();
+            await page.locator('div:nth-child(7) > .product-info > .product-actions > .add-to-cart').click();
 
             // Check cart icon for item count - example: 7 items
             // The exact number depends on how "Add to Cart" behaves for already added items (increment vs. fixed quantity)
@@ -163,7 +163,7 @@ test.describe('Kaniya Dairy E2E Test Suite', () => {
             // For this example, let's assume it navigates to an order confirmation that has this link.
             await expect(page.getByRole('link', { name: 'Dobara Shopping Karein' })).toBeVisible({ timeout: 10000 });
             await page.getByRole('link', { name: 'Dobara Shopping Karein' }).click();
-            await expect(page).toHaveURL('/'); // Expect to be back on the homepage
+            await expect(page).toHaveURL('http://localhost:5173/'); // Expect to be back on the homepage
         });
     });
 }); 
