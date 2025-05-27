@@ -1,8 +1,8 @@
 {
-  "sahana_frontend": {
+  "frontend": {
     "ic": "mklha-yyaaa-aaaak-apcxq-cai"
   },
-  "krishnacalc": {
+  "backend": {
     "ic": "rdbgx-3qaaa-aaaag-qng4q-cai"
   }
 }

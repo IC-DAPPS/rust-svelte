@@ -9,7 +9,7 @@ const config = {
 		}
 	}),
 	kit: {
-		adapter: adapter(),
+		adapter: adapter({ fallback: 'index.html' }),
 		files: {
 			assets: 'src/frontend/static',
 			lib: 'src/frontend/src/lib',
