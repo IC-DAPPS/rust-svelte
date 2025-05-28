@@ -4,11 +4,17 @@
   import { getAllOrders, getProducts, updateOrderStatusAdmin } from "$lib/api";
   import type { Order, OrderStatus, Product } from "$lib/types";
 
-  let orders: Order[] = [];
+  let allFetchedOrders: Order[] = []; // Store all orders fetched from API
   let products: Product[] = [];
   let productMap = new Map<number, Product>();
   let isLoading = true;
   let loadError = false;
+
+  // Pagination state
+  let groupedOrdersByDate = new Map<string, Order[]>();
+  let availableDates: string[] = [];
+  let currentDateIndex: number = 0;
+  let currentDayOrders: Order[] = [];
 
   // For status updates
   let updatingStatus: { [key: number]: boolean } = {};
@@ -25,26 +31,92 @@
   ];
 
   onMount(async () => {
-    await loadOrders();
+    await loadOrdersAndProducts(); // Renamed for clarity
   });
 
-  async function loadOrders() {
+  function getOrderDateString(timestamp: number | bigint | undefined): string {
+    if (timestamp === undefined || timestamp === null) return "Invalid Date";
+    const numericTimestamp = Number(timestamp);
+    if (numericTimestamp === 0) return "Invalid Date";
+    const date = new Date(numericTimestamp / 1_000_000);
+    if (isNaN(date.getTime())) return "Invalid Date";
+    return date.toISOString().split("T")[0]; // YYYY-MM-DD format
+  }
+
+  async function loadOrdersAndProducts() {
     isLoading = true;
     loadError = false;
 
     try {
-      // Fetch products first to create a lookup map
       const productsFromApi = await getProducts();
       productMap = new Map(productsFromApi.map((p) => [p.id, p]));
-      products = productsFromApi; // Store for other uses if needed
+      products = productsFromApi;
 
-      // Fetch orders from backend API
-      orders = await getAllOrders();
+      allFetchedOrders = await getAllOrders();
+      groupAndSetOrdersByDate(allFetchedOrders);
+
       isLoading = false;
     } catch (error) {
-      console.error("Failed to load orders:", error);
+      console.error("Failed to load orders/products:", error);
       loadError = true;
       isLoading = false;
+    }
+  }
+
+  function groupAndSetOrdersByDate(ordersToGroup: Order[]) {
+    const groups = new Map<string, Order[]>();
+    ordersToGroup.forEach((order) => {
+      const dateStr = getOrderDateString(order.timestamp);
+      if (dateStr !== "Invalid Date") {
+        if (!groups.has(dateStr)) {
+          groups.set(dateStr, []);
+        }
+        groups.get(dateStr)?.push(order);
+      }
+    });
+
+    groupedOrdersByDate = groups;
+    // Sort dates in descending order (newest first)
+    availableDates = Array.from(groups.keys()).sort((a, b) =>
+      b.localeCompare(a)
+    );
+
+    if (availableDates.length > 0) {
+      currentDateIndex = 0; // Reset to the first date (newest)
+      updateCurrentDayOrders();
+    } else {
+      currentDayOrders = [];
+    }
+  }
+
+  function updateCurrentDayOrders() {
+    if (
+      availableDates.length > 0 &&
+      currentDateIndex >= 0 &&
+      currentDateIndex < availableDates.length
+    ) {
+      const selectedDate = availableDates[currentDateIndex];
+      currentDayOrders = groupedOrdersByDate.get(selectedDate) || [];
+      // Sort orders for the current day by timestamp (newest first within the day)
+      currentDayOrders.sort(
+        (a, b) => Number(b.timestamp) - Number(a.timestamp)
+      );
+    } else {
+      currentDayOrders = [];
+    }
+  }
+
+  function showOlderDate() {
+    if (currentDateIndex < availableDates.length - 1) {
+      currentDateIndex++;
+      updateCurrentDayOrders();
+    }
+  }
+
+  function showNewerDate() {
+    if (currentDateIndex > 0) {
+      currentDateIndex--;
+      updateCurrentDayOrders();
     }
   }
 
@@ -71,7 +143,6 @@
     updatingStatus = { ...updatingStatus, [orderId]: true };
     statusUpdateError = { ...statusUpdateError, [orderId]: null };
 
-    // Format status to OrderStatus type (e.g., { Pending: null })
     const statusObject: OrderStatus = { [newStatusKey]: null } as OrderStatus;
 
     try {
@@ -81,14 +152,15 @@
       );
 
       if (success) {
-        // Update local state for demo only if API call was successful
-        orders = orders.map((order) => {
+        // Update local state: find the order in allFetchedOrders and update it
+        allFetchedOrders = allFetchedOrders.map((order) => {
           if (order.id === orderId) {
             return { ...order, status: statusObject };
           }
           return order;
         });
-        // Optionally show a success toast if not already handled by the API function
+        // Re-group and update displayed orders to reflect the change immediately
+        groupAndSetOrdersByDate(allFetchedOrders);
       } else {
         statusUpdateError = {
           ...statusUpdateError,
@@ -142,7 +214,11 @@
 <div class="admin-page">
   <div class="page-header">
     <h1>Order Management</h1>
-    <button class="refresh-btn" on:click={loadOrders} disabled={isLoading}>
+    <button
+      class="refresh-btn"
+      on:click={loadOrdersAndProducts}
+      disabled={isLoading}
+    >
       🔄 Refresh Orders
     </button>
   </div>
@@ -155,6 +231,36 @@
       </div>
     </div>
 
+    <!-- Pagination Controls -->
+    {#if availableDates.length > 0}
+      <div class="pagination-controls">
+        <button
+          on:click={showOlderDate}
+          disabled={currentDateIndex === availableDates.length - 1}
+        >
+          &lt; Previous Day
+        </button>
+        <span>
+          Displaying orders for:
+          <strong
+            >{new Date(
+              availableDates[currentDateIndex] + "T00:00:00"
+            ).toLocaleDateString("en-IN", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}</strong
+          >
+          ({currentDayOrders.length} order{currentDayOrders.length === 1
+            ? ""
+            : "s"})
+        </span>
+        <button on:click={showNewerDate} disabled={currentDateIndex === 0}>
+          Next Day &gt;
+        </button>
+      </div>
+    {/if}
+
     {#if isLoading}
       <div class="loading-container">
         <div class="spinner"></div>
@@ -163,11 +269,25 @@
     {:else if loadError}
       <div class="error-container">
         <p>Failed to load orders. Please try again.</p>
-        <button class="retry-btn" on:click={loadOrders}>Try Again</button>
+        <button class="retry-btn" on:click={loadOrdersAndProducts}
+          >Try Again</button
+        >
       </div>
-    {:else if orders.length === 0}
+    {:else if currentDayOrders.length === 0 && !isLoading && !loadError}
       <div class="empty-state">
-        <p>No orders found.</p>
+        {#if availableDates.length > 0}
+          <p>
+            No orders found for {new Date(
+              availableDates[currentDateIndex] + "T00:00:00"
+            ).toLocaleDateString("en-IN", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}.
+          </p>
+        {:else}
+          <p>No orders found at all.</p>
+        {/if}
       </div>
     {:else}
       <div class="orders-table-container">
@@ -185,7 +305,7 @@
             </tr>
           </thead>
           <tbody>
-            {#each orders as order (order.id)}
+            {#each currentDayOrders as order (order.id)}
               <tr>
                 <td>#{order.id}</td>
                 <td>{order.user_phone_number}</td>
@@ -493,5 +613,49 @@
     .orders-section {
       padding: 1rem;
     }
+  }
+
+  .pagination-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+  }
+
+  .pagination-controls button {
+    padding: 0.5rem 1rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .pagination-controls button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+
+  .pagination-controls button:hover:not(:disabled) {
+    background-color: #0056b3;
+  }
+
+  .pagination-controls span {
+    font-size: 0.95rem;
+    color: #333;
+  }
+
+  .pagination-controls span strong {
+    color: #007bff;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
   }
 </style>
