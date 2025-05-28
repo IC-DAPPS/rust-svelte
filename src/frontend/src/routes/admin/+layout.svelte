@@ -64,7 +64,7 @@
 {:else if isAuthenticated}
   <div class="admin-layout">
     <div class="mobile-header">
-      <span>Kanhiya Admin</span>
+      <span>Kanhaiya Admin</span>
       <button class="menu-toggle" on:click={toggleMobileMenu}>
         {#if isMobileMenuOpen}
           ❌
@@ -78,10 +78,10 @@
       <div class="admin-logo">
         <img
           src="/images/logo/logo.jpg"
-          alt="Kanhiya Dairy Logo"
+          alt="Kanhaiya Dairy Logo"
           class="sidebar-logo-img"
         />
-        <h2>Kanhiya Admin</h2>
+        <h2>Kanhaiya Admin</h2>
       </div>
       <nav class="admin-nav">
         <a

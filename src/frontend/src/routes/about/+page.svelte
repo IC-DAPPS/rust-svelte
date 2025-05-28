@@ -3,13 +3,15 @@
 </script>
 
 <svelte:head>
-  <title>{$isEnglish ? "About Us" : "हमारे बारे में"} - Kanhiya Dairy</title>
+  <title>{$isEnglish ? "About Us" : "हमारे बारे में"} - Kanhaiya Dairy</title>
 </svelte:head>
 
 <div class="about-page">
   <div class="banner">
     <div class="container">
-      <h1>{$isEnglish ? "About Kanhiya Dairy" : "कानिया डेयरी के बारे में"}</h1>
+      <h1>
+        {$isEnglish ? "About Kanhaiya Dairy" : "कन्हैया डेयरी के बारे में"}
+      </h1>
       <p>
         {$isEnglish
           ? "Delivering fresh dairy products since 2010"
@@ -24,8 +26,8 @@
         <h2>{$isEnglish ? "Our Story" : "हमारी कहानी"}</h2>
         {#if $isEnglish}
           <p>
-            Kanhiya Dairy has been serving the Suhagi, Jabalpur area for over 15
-            years. What started as a small family business has grown into a
+            Kanhaiya Dairy has been serving the Suhagi, Jabalpur area for over
+            15 years. What started as a small family business has grown into a
             trusted local dairy supplier, known for our commitment to quality
             and freshness.
           </p>
@@ -36,7 +38,7 @@
           </p>
         {:else}
           <p>
-            कानिया डेयरी १५ वर्षों से अधिक समय से सुहागी, जबलपुर क्षेत्र में
+            कन्हैया डेयरी १५ वर्षों से अधिक समय से सुहागी, जबलपुर क्षेत्र में
             सेवा प्रदान कर रही है। एक छोटे पारिवारिक व्यवसाय के रूप में जो शुरू
             हुआ वह गुणवत्ता और ताजगी के प्रति हमारी प्रतिबद्धता के लिए जाने जाने
             वाले एक विश्वसनीय स्थानीय डेयरी आपूर्तिकर्ता के रूप में विकसित हुआ
@@ -120,13 +122,13 @@
           </p>
           {#if $isEnglish}
             <p class="member-bio">
-              Started Kanhiya Dairy with a vision to provide pure and fresh
+              Started Kanhaiya Dairy with a vision to provide pure and fresh
               dairy products to the community.
             </p>
           {:else}
             <p class="member-bio">
               समुदाय को शुद्ध और ताज़ा डेयरी उत्पाद प्रदान करने की दृष्टि से
-              कानिया डेयरी शुरू की।
+              कन्हैया डेयरी शुरू की।
             </p>
           {/if}
         </div>
@@ -142,12 +144,12 @@
           </p>
           {#if $isEnglish}
             <p class="member-bio">
-              Developed the Kanhiya Dairy app to make ordering dairy products
+              Developed the Kanhaiya Dairy app to make ordering dairy products
               more convenient.
             </p>
           {:else}
             <p class="member-bio">
-              डेयरी उत्पादों को ऑर्डर करना अधिक सुविधाजनक बनाने के लिए कानिया
+              डेयरी उत्पादों को ऑर्डर करना अधिक सुविधाजनक बनाने के लिए कन्हैया
               डेयरी ऐप विकसित किया।
             </p>
           {/if}
@@ -185,13 +187,13 @@
         <div class="testimonial">
           {#if $isEnglish}
             <div class="quote">
-              "I've been buying milk from Kanhiya Dairy for over 10 years.
+              "I've been buying milk from Kanhaiya Dairy for over 10 years.
               Nothing compares to their freshness and taste!"
             </div>
             <div class="author">- Ravi Sharma, Suhagi</div>
           {:else}
             <div class="quote">
-              "मैं १० से अधिक वर्षों से कानिया डेयरी से दूध खरीद रहा हूँ। उनकी
+              "मैं १० से अधिक वर्षों से कन्हैया डेयरी से दूध खरीद रहा हूँ। उनकी
               ताजगी और स्वाद का कोई मुकाबला नहीं!"
             </div>
             <div class="author">- रवि शर्मा, सुहागी</div>
@@ -235,7 +237,7 @@
       <div class="contact-details">
         <div class="contact-info">
           <h3>{$isEnglish ? "Visit Our Shop" : "हमारी दुकान पर जाएँ"}</h3>
-          <p>{$isEnglish ? "Kanhiya Dairy Shop" : "कानिया डेयरी की दुकान"}</p>
+          <p>{$isEnglish ? "Kanhaiya Dairy Shop" : "कन्हैया डेयरी की दुकान"}</p>
           <p>{$isEnglish ? "Behind TI Bunglow" : "टी.आई. बंगले के पीछे"}</p>
           <p>{$isEnglish ? "Suhagi, Jabalpur" : "सुहागी, जबलपुर"}</p>
           <p>{$isEnglish ? "Madhya Pradesh, 482001" : "मध्य प्रदेश, ४८२००१"}</p>
@@ -244,8 +246,8 @@
           </p>
           <p>
             {$isEnglish
-              ? "Email: info@Kanhiyadairy.com"
-              : "ईमेल: info@Kanhiyadairy.com"}
+              ? "Email: info@Kanhaiyadairy.com"
+              : "ईमेल: info@Kanhaiyadairy.com"}
           </p>
           <p>
             {$isEnglish

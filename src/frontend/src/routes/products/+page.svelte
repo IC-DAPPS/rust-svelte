@@ -51,7 +51,7 @@
 </script>
 
 <svelte:head>
-  <title>Products - Kanhiya Dairy</title>
+  <title>Products - Kanhaiya Dairy</title>
 </svelte:head>
 
 <div class="products-page container">

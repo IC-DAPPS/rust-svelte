@@ -17,7 +17,7 @@
     <div class="container">
       <div class="footer-content">
         <div class="footer-section">
-          <h3>Kanhiya Dairy</h3>
+          <h3>Kanhaiya Dairy</h3>
           <p>Fresh dairy products delivered daily</p>
           <p>Suhagi, Jabalpur</p>
         </div>
@@ -34,13 +34,13 @@
         <div class="footer-section">
           <h3>Contact Us</h3>
           <p>Phone: 07089345065</p>
-          <p>Email: info@Kanhiyadairy.com</p>
+          <p>Email: info@Kanhaiyadairy.com</p>
           <p>Address: Suhagi, Behind TI Bunglow, Jabalpur</p>
         </div>
       </div>
 
       <div class="footer-bottom">
-        <p>&copy; 2023 Kanhiya Dairy. All rights reserved.</p>
+        <p>&copy; 2023 Kanhaiya Dairy. All rights reserved.</p>
       </div>
     </div>
   </footer>

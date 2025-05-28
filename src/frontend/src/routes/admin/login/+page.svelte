@@ -55,14 +55,14 @@
 </script>
 
 <svelte:head>
-  <title>Admin Login - Kanhiya Dairy</title>
+  <title>Admin Login - Kanhaiya Dairy</title>
 </svelte:head>
 
 <div class="login-page">
   <div class="login-container">
     <div class="login-header">
       <h1>Admin Login</h1>
-      <p>Kanhiya Dairy Administration</p>
+      <p>Kanhaiya Dairy Administration</p>
     </div>
 
     <form on:submit|preventDefault={handleLogin} class="login-form">

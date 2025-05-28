@@ -212,7 +212,7 @@
     font-weight: normal; /* Label doesn't need to be bold */
   }
   .order-id-highlight {
-    color: #5eaa6f; /* Kanhiya Dairy green */
+    color: #5eaa6f; /* Kanhaiya Dairy green */
     font-weight: bold;
   }
   .back-link {
