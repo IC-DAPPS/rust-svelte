@@ -1,50 +1,72 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { page } from "$app/stores";
-  import { getOrderDetails, createOrder, cancelMyOrder } from "$lib/api";
-  import type { Order, OrderItemInput } from "$lib/types";
+  import {
+    getOrderDetails,
+    createOrder,
+    cancelMyOrder,
+    getProducts,
+  } from "$lib/api";
+  import type { Order, OrderItemInput, Product } from "$lib/types";
   import { toastsStore } from "@dfinity/gix-components";
 
   let order: Order | null = null;
+  let allProducts: Product[] = [];
   let loading = true;
   let error = false;
   let phoneNumber = "";
   let isLoggedIn = false;
 
-  onMount(() => {
-    // Auto-load phone number from localStorage
+  onMount(async () => {
     const storedPhoneNumber = localStorage.getItem("userPhoneNumber");
     if (storedPhoneNumber) {
       phoneNumber = storedPhoneNumber;
       isLoggedIn = true;
-      // Auto-load order details with stored phone number
-      loadOrderDetails();
+      await loadInitialData();
     }
   });
 
-  // Handle login with phone number
-  function handleLogin() {
-    if (phoneNumber.trim().length > 0) {
-      // Save phone for future use
-      localStorage.setItem("userPhoneNumber", phoneNumber);
-      isLoggedIn = true;
-      loadOrderDetails();
-    }
-  }
-
-  // Load order details
-  async function loadOrderDetails() {
+  async function loadInitialData() {
     loading = true;
     error = false;
-
     try {
       const orderId = BigInt($page.params.id);
-      order = await getOrderDetails(orderId, phoneNumber);
+      const [orderDetails, productsData] = await Promise.all([
+        getOrderDetails(orderId, phoneNumber),
+        getProducts(),
+      ]);
+
+      order = orderDetails;
+      allProducts = productsData;
 
       if (!order) {
         error = true;
       }
+      loading = false;
+    } catch (err) {
+      console.error("Failed to load initial data:", err);
+      error = true;
+      loading = false;
+    }
+  }
 
+  function handleLogin() {
+    if (phoneNumber.trim().length > 0) {
+      localStorage.setItem("userPhoneNumber", phoneNumber);
+      isLoggedIn = true;
+      loadInitialData();
+    }
+  }
+
+  async function loadOrderDetailsOnly() {
+    loading = true;
+    error = false;
+    try {
+      const orderId = BigInt($page.params.id);
+      order = await getOrderDetails(orderId, phoneNumber);
+      if (!order) {
+        error = true;
+      }
       loading = false;
     } catch (err) {
       console.error("Failed to load order details:", err);
@@ -53,12 +75,15 @@
     }
   }
 
-  // Format timestamp to readable date
+  function getProductNameById(productId: number): string {
+    const product = allProducts.find((p) => p.id === productId);
+    return product ? product.name : "Unknown Product";
+  }
+
   function formatDate(timestamp: number): string {
     return new Date(Number(timestamp) / 1000000).toLocaleString();
   }
 
-  // Get status color based on order status
   function getStatusColor(status: any): string {
     if ("Pending" in status) return "#f0ad4e";
     if ("Processing" in status) return "#5bc0de";
@@ -69,7 +94,6 @@
     return "#6c757d";
   }
 
-  // Get status text based on order status
   function getStatusText(status: any): string {
     if ("Pending" in status) return "Pending";
     if ("Processing" in status) return "Processing";
@@ -84,13 +108,11 @@
     if (!order) return;
 
     try {
-      // Create order items input from the previous order
       const orderItems: OrderItemInput[] = order.items.map((item) => ({
         product_id: item.product_id,
         quantity: item.quantity,
       }));
 
-      // Create new order with same items and delivery address
       const newOrderId = await createOrder(
         phoneNumber,
         orderItems,
@@ -103,7 +125,6 @@
           level: "success",
         });
 
-        // Navigate to the orders page
         window.location.href = "/orders";
       } else {
         toastsStore.show({
@@ -139,10 +160,8 @@
     try {
       const updatedOrder = await cancelMyOrder(BigInt(order.id), phoneNumber);
       if (updatedOrder) {
-        order = updatedOrder; // Update the local order state
-        // The toast for success is shown by cancelMyOrder
+        order = updatedOrder;
       }
-      // If updatedOrder is null, cancelMyOrder already showed an error toast
     } catch (err) {
       console.error("Error in handleCancelOrder (details page):", err);
       toastsStore.show({
@@ -222,7 +241,7 @@
           <table class="items-table">
             <thead>
               <tr>
-                <th>Product ID</th>
+                <th>Product Name</th>
                 <th>Quantity</th>
                 <th>Price (₹)</th>
                 <th>Total (₹)</th>
@@ -231,7 +250,7 @@
             <tbody>
               {#each order.items as item}
                 <tr>
-                  <td>{item.product_id.toString()}</td>
+                  <td>{getProductNameById(item.product_id)}</td>
                   <td>{item.quantity}</td>
                   <td>{item.price_per_unit_at_order.toFixed(2)}</td>
                   <td
@@ -260,12 +279,39 @@
             <p>{order.delivery_address}</p>
           </div>
 
+          <div class="payment-info-section">
+            <h3>Payment Information</h3>
+            <p><strong>Payment Method:</strong> Cash on Delivery</p>
+            {#if "Delivered" in order.status}
+              <p>
+                <strong>Status:</strong>
+                <span class="status-text status-paid"
+                  >Paid (assumed for COD)</span
+                >
+              </p>
+            {:else if "Cancelled" in order.status}
+              <p>
+                <strong>Status:</strong>
+                <span class="status-text status-cancelled"
+                  >Not Applicable (Order Cancelled)</span
+                >
+              </p>
+            {:else}
+              <p>
+                <strong>Status:</strong>
+                <span class="status-text status-pending"
+                  >To be paid upon delivery</span
+                >
+              </p>
+            {/if}
+          </div>
+
           <div class="tracking-info">
             <h3>
               Order Tracking
               <button
                 class="btn btn-sm btn-outline-secondary refresh-btn"
-                on:click={loadOrderDetails}
+                on:click={loadOrderDetailsOnly}
                 title="Refresh order status"
               >
                 <svg
@@ -513,6 +559,7 @@
   .order-info-section h3,
   .contact-info h3,
   .delivery-info h3,
+  .payment-info-section h3,
   .tracking-info h3 {
     margin-top: 0;
     margin-bottom: 1rem;
@@ -535,8 +582,13 @@
   }
 
   .items-table th {
-    background-color: #f0f0f0;
+    background-color: #e6f2ff;
     font-weight: 600;
+    color: #333;
+  }
+
+  .items-table tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
   }
 
   .items-table td:last-child,
@@ -551,7 +603,8 @@
   }
 
   .contact-info p,
-  .delivery-info p {
+  .delivery-info p,
+  .payment-info-section p {
     margin: 0.5rem 0;
     line-height: 1.6;
   }
@@ -572,10 +625,11 @@
     content: "";
     position: absolute;
     left: 10px;
-    top: 0;
-    bottom: 0;
+    top: 5px;
+    bottom: 5px;
     width: 2px;
     background-color: #e0e0e0;
+    z-index: 0;
   }
 
   .timeline-item {
@@ -601,6 +655,7 @@
   .timeline-item.active .timeline-point {
     background-color: #5eaa6f;
   }
+
   .timeline-item.completed .timeline-point {
     background-color: #5eaa6f;
   }
@@ -671,21 +726,91 @@
       padding: 1rem 0.5rem;
     }
     .order-card {
-      padding: 1.5rem;
+      padding: 1rem;
     }
     .order-header {
       flex-direction: column;
       align-items: stretch;
+      gap: 0.5rem;
+    }
+    .order-info h2 {
+      font-size: 1.5rem;
+    }
+    .order-total {
+      font-size: 1.3rem;
+      margin-top: 0.5rem;
     }
     .order-status {
       text-align: left;
       margin-top: 1rem;
     }
+    .order-sections {
+      gap: 1rem;
+    }
+    .order-items-section,
+    .order-info-section {
+      padding: 1rem;
+    }
+
+    .items-table {
+      display: block;
+      overflow-x: auto;
+    }
+    .items-table th,
+    .items-table td {
+      padding: 0.5rem 0.75rem;
+      white-space: nowrap;
+    }
+
     .order-actions {
       flex-direction: column;
     }
     .order-actions .btn {
       width: 100%;
+      margin-bottom: 0.5rem;
     }
+    .order-actions .btn:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  /* Styling for Payment Information Section */
+  .payment-info-section {
+    background-color: #fdfaf0; /* Light creamy background */
+    border: 1px solid #f0e6c6; /* Soft border */
+    border-radius: 6px; /* Consistent with other sections */
+    padding: 1.25rem; /* A bit more padding */
+  }
+
+  .payment-info-section h3 {
+    color: #795548; /* Brownish color for heading */
+    margin-bottom: 1rem; /* Space below heading */
+  }
+
+  .payment-info-section p {
+    margin: 0.75rem 0; /* More vertical space between lines */
+    font-size: 0.95rem; /* Slightly larger font */
+  }
+
+  .payment-info-section p strong {
+    color: #5d4037; /* Darker brown for labels */
+    margin-right: 0.5rem;
+  }
+
+  /* Specific styling for payment status text */
+  .payment-info-section p .status-text {
+    font-weight: 500;
+  }
+
+  .payment-info-section p .status-pending {
+    color: #ffa000; /* Amber/Orange for pending payment */
+  }
+
+  .payment-info-section p .status-paid {
+    color: #388e3c; /* Green for paid */
+  }
+
+  .payment-info-section p .status-cancelled {
+    color: #757575; /* Grey for not applicable/cancelled */
   }
 </style>

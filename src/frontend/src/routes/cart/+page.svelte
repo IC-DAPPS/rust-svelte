@@ -218,6 +218,13 @@
           <span>₹{$cartTotal.toFixed(2)}</span>
         </div>
 
+        <div class="payment-method-note">
+          <p>
+            <strong>Payment Method:</strong> We currently accept Cash on Delivery
+            only.
+          </p>
+        </div>
+
         <div class="checkout-form">
           <div class="form-group">
             <label for="phone">Phone Number*</label>
@@ -403,6 +410,21 @@
     border-top: 1px solid #eee;
     font-weight: bold;
     font-size: 1.2rem;
+  }
+
+  .payment-method-note {
+    padding: 0.75rem;
+    background-color: #f8f9fa; /* Light background for emphasis */
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+
+  .payment-method-note p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #333;
   }
 
   .checkout-form {

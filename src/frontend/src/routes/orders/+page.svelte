@@ -55,7 +55,11 @@
     attemptCount++;
 
     try {
-      orders = await getMyOrders(phoneNumber);
+      let fetchedOrders = await getMyOrders(phoneNumber);
+
+      // Sort orders by timestamp in descending order (newest first)
+      fetchedOrders.sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
+      orders = fetchedOrders;
 
       // If we don't get any orders on the first attempt, try one more time
       if (orders.length === 0 && attemptCount === 1) {

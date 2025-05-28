@@ -4,6 +4,8 @@
   import type { Product } from "$lib/types";
   import ProductCard from "$lib/components/ProductCard.svelte";
   import { cartStore } from "$lib/stores/cart";
+  import { toastsStore } from "@dfinity/gix-components";
+  import { isEnglish } from "$lib/stores/languageStore";
 
   let products: Product[] = [];
   let loading = true;
@@ -52,15 +54,13 @@
         <button on:click={() => window.location.reload()}>Retry</button>
       </div>
     {:else if products.length === 0}
-      <div class="no-products">
-        <p>No products available right now. Please check back later.</p>
-      </div>
+      <p>No products available at the moment.</p>
     {:else}
       <div class="product-grid">
         {#each products as product (product.id)}
           <ProductCard
             {product}
-            onAddToCart={(quantity) => addToCart(product, quantity)}
+            onAddToCart={(qty) => addToCart(product, qty)}
           />
         {/each}
       </div>
@@ -70,18 +70,18 @@
   <section class="features">
     <div class="feature">
       <div class="icon">🚚</div>
-      <h3>Free Local Delivery</h3>
-      <p>Free delivery in Suhagi, Jabalpur area</p>
+      <h3>Local Delivery</h3>
+      <p>Free & fast delivery in Suhagi, Jabalpur.</p>
     </div>
     <div class="feature">
       <div class="icon">🐄</div>
       <h3>Fresh & Pure</h3>
-      <p>All products delivered fresh daily</p>
+      <p>Sourced directly, delivered fresh daily.</p>
     </div>
     <div class="feature">
-      <div class="icon">🔄</div>
-      <h3>Easy Subscription</h3>
-      <p>Set up daily deliveries</p>
+      <div class="icon">💵</div>
+      <h3>Cash on Delivery</h3>
+      <p>Pay safely when your order arrives.</p>
     </div>
   </section>
 </div>
@@ -196,10 +196,10 @@
 
   .features {
     display: flex;
-    justify-content: space-between;
-    margin: 4rem 0;
+    justify-content: space-around;
+    margin: 4rem 1rem;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 1.5rem;
   }
 
   .feature {
@@ -210,6 +210,11 @@
     background-color: #f8f9fa;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .feature:hover {
+    transform: translateY(-5px);
   }
 
   .icon {
