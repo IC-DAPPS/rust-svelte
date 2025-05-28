@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { page } from "$app/stores";
-  import { getOrderDetails, createOrder } from "$lib/api";
-  import type { Order } from "$lib/types";
+  import { getOrderDetails, createOrder, cancelMyOrder } from "$lib/api";
+  import type { Order, OrderItemInput } from "$lib/types";
   import { toastsStore } from "@dfinity/gix-components";
 
   let order: Order | null = null;
@@ -85,7 +85,7 @@
 
     try {
       // Create order items input from the previous order
-      const orderItems = order.items.map((item) => ({
+      const orderItems: OrderItemInput[] = order.items.map((item) => ({
         product_id: item.product_id,
         quantity: item.quantity,
       }));
@@ -115,6 +115,38 @@
       console.error("Error repeating order:", error);
       toastsStore.show({
         text: "Failed to repeat order",
+        level: "error",
+      });
+    }
+  }
+
+  async function handleCancelOrder() {
+    if (!order || !order.id) {
+      toastsStore.show({
+        text: "Order details are not available to cancel.",
+        level: "error",
+      });
+      return;
+    }
+    if (!phoneNumber) {
+      toastsStore.show({
+        text: "Phone number is not available. Please log in again.",
+        level: "error",
+      });
+      return;
+    }
+
+    try {
+      const updatedOrder = await cancelMyOrder(BigInt(order.id), phoneNumber);
+      if (updatedOrder) {
+        order = updatedOrder; // Update the local order state
+        // The toast for success is shown by cancelMyOrder
+      }
+      // If updatedOrder is null, cancelMyOrder already showed an error toast
+    } catch (err) {
+      console.error("Error in handleCancelOrder (details page):", err);
+      toastsStore.show({
+        text: "An unexpected error occurred while trying to cancel the order.",
         level: "error",
       });
     }
@@ -254,61 +286,69 @@
                 </svg>
               </button>
             </h3>
-            <div class="tracking-timeline">
+            <div class="timeline">
               <div
-                class="timeline-item"
-                class:active={"Pending" in order.status ||
-                  "Processing" in order.status ||
-                  "Confirmed" in order.status ||
-                  "OutForDelivery" in order.status ||
-                  "Delivered" in order.status}
+                class="timeline-item {'Pending' in order.status
+                  ? 'active'
+                  : ''} {'Confirmed' in order.status ||
+                'Processing' in order.status ||
+                'OutForDelivery' in order.status ||
+                'Delivered' in order.status
+                  ? 'completed'
+                  : ''}"
               >
                 <div class="timeline-point"></div>
                 <div class="timeline-content">
-                  <h4>Order Placed</h4>
-                  <p>{formatDate(order.timestamp)}</p>
+                  <h4>Pending</h4>
+                  <p>
+                    Your order has been placed and is awaiting confirmation.
+                  </p>
                 </div>
               </div>
-
               <div
-                class="timeline-item"
-                class:active={"Processing" in order.status ||
-                  "Confirmed" in order.status ||
-                  "OutForDelivery" in order.status ||
-                  "Delivered" in order.status}
-              >
-                <div class="timeline-point"></div>
-                <div class="timeline-content">
-                  <h4>Processing</h4>
-                </div>
-              </div>
-
-              <div
-                class="timeline-item"
-                class:active={"Confirmed" in order.status ||
-                  "OutForDelivery" in order.status ||
-                  "Delivered" in order.status}
+                class="timeline-item {'Confirmed' in order.status
+                  ? 'active'
+                  : ''} {'Processing' in order.status ||
+                'OutForDelivery' in order.status ||
+                'Delivered' in order.status
+                  ? 'completed'
+                  : ''}"
               >
                 <div class="timeline-point"></div>
                 <div class="timeline-content">
                   <h4>Confirmed</h4>
+                  <p>Your order has been confirmed by the dairy.</p>
                 </div>
               </div>
-
               <div
-                class="timeline-item"
-                class:active={"OutForDelivery" in order.status ||
-                  "Delivered" in order.status}
+                class="timeline-item {'Processing' in order.status
+                  ? 'active'
+                  : ''} {'OutForDelivery' in order.status ||
+                'Delivered' in order.status
+                  ? 'completed'
+                  : ''}"
+              >
+                <div class="timeline-point"></div>
+                <div class="timeline-content">
+                  <h4>Processing</h4>
+                  <p>Your items are being prepared.</p>
+                </div>
+              </div>
+              <div
+                class="timeline-item {'OutForDelivery' in order.status
+                  ? 'active'
+                  : ''} {'Delivered' in order.status ? 'completed' : ''}"
               >
                 <div class="timeline-point"></div>
                 <div class="timeline-content">
                   <h4>Out for Delivery</h4>
+                  <p>Your order is on its way!</p>
                 </div>
               </div>
-
               <div
-                class="timeline-item"
-                class:active={"Delivered" in order.status}
+                class="timeline-item {'Delivered' in order.status
+                  ? 'active completed'
+                  : ''}"
               >
                 <div class="timeline-point"></div>
                 <div class="timeline-content">
@@ -324,7 +364,9 @@
         <a href="/orders" class="btn btn-outline">Back to Orders</a>
         <a href="/" class="btn btn-primary">Dobara Shopping Karein</a>
         {#if "Pending" in order.status}
-          <button class="btn btn-secondary">Cancel Order</button>
+          <button class="btn btn-secondary" on:click={handleCancelOrder}>
+            Cancel Order
+          </button>
         {/if}
         {#if "Delivered" in order.status}
           <button class="btn btn-primary" on:click={repeatOrder}
@@ -462,16 +504,22 @@
 
   .order-items-section,
   .order-info-section {
-    min-width: 0;
+    background-color: #f9f9f9;
+    padding: 1.5rem;
+    border-radius: 6px;
   }
 
-  h3 {
+  .order-items-section h3,
+  .order-info-section h3,
+  .contact-info h3,
+  .delivery-info h3,
+  .tracking-info h3 {
+    margin-top: 0;
     margin-bottom: 1rem;
-    font-size: 1.4rem;
-    color: #333;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    color: #444;
+    font-size: 1.2rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5rem;
   }
 
   .items-table {
@@ -479,69 +527,89 @@
     border-collapse: collapse;
   }
 
-  th,
-  td {
-    padding: 0.75rem;
+  .items-table th,
+  .items-table td {
     text-align: left;
+    padding: 0.75rem;
     border-bottom: 1px solid #eee;
   }
 
-  th {
-    font-weight: 500;
-    color: #666;
+  .items-table th {
+    background-color: #f0f0f0;
+    font-weight: 600;
   }
 
-  .total-row {
-    font-weight: bold;
+  .items-table td:last-child,
+  .items-table th:last-child {
+    text-align: right;
   }
 
   .total-row td {
-    border-top: 2px solid #ddd;
-    padding-top: 1rem;
+    font-weight: bold;
+    font-size: 1.1rem;
+    background-color: #f8f8f8;
   }
 
-  .contact-info,
-  .delivery-info,
-  .tracking-info {
-    margin-bottom: 2rem;
+  .contact-info p,
+  .delivery-info p {
+    margin: 0.5rem 0;
+    line-height: 1.6;
   }
 
-  .tracking-timeline {
+  .tracking-info .refresh-btn {
+    margin-left: 0.5rem;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.8rem;
+    vertical-align: middle;
+  }
+
+  .timeline {
+    margin-top: 1rem;
     position: relative;
   }
 
-  .tracking-timeline:before {
+  .timeline::before {
     content: "";
     position: absolute;
+    left: 10px;
     top: 0;
     bottom: 0;
-    left: 11px;
     width: 2px;
-    background-color: #ddd;
+    background-color: #e0e0e0;
   }
 
   .timeline-item {
-    position: relative;
-    padding-left: 40px;
+    display: flex;
+    align-items: flex-start;
     margin-bottom: 1.5rem;
+    position: relative;
+    padding-left: 30px;
   }
 
   .timeline-point {
-    position: absolute;
-    left: 0;
-    top: 5px;
-    width: 24px;
-    height: 24px;
+    width: 12px;
+    height: 12px;
+    background-color: #ccc;
     border-radius: 50%;
-    background-color: #eee;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    position: absolute;
+    left: 4px;
+    top: 5px;
+    border: 2px solid white;
     z-index: 1;
   }
 
   .timeline-item.active .timeline-point {
     background-color: #5eaa6f;
+  }
+  .timeline-item.completed .timeline-point {
+    background-color: #5eaa6f;
+  }
+
+  .timeline-content {
+    background-color: #f9f9f9;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    flex: 1;
   }
 
   .timeline-content h4 {
@@ -557,69 +625,67 @@
   }
 
   .order-actions {
+    margin-top: 2rem;
     display: flex;
-    gap: 1rem;
+    gap: 0.75rem;
     justify-content: flex-end;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
   }
 
   .need-help {
+    margin-top: 3rem;
     text-align: center;
-    margin-top: 2rem;
-    padding: 1rem;
-    background-color: #f8f8f8;
-    border-radius: 8px;
+    padding: 1.5rem;
+    background-color: #f0f8ff;
+    border-radius: 6px;
   }
 
   .need-help h3 {
-    margin-bottom: 0.5rem;
+    margin: 0 0 0.5rem;
+    color: #333;
   }
 
   .need-help p {
     margin: 0;
+    color: #555;
   }
 
-  .refresh-btn {
-    margin-left: 0.5rem;
-    padding: 0.25rem 0.5rem;
-    font-size: 0.8rem;
+  .need-help a {
+    color: #007bff;
+    text-decoration: none;
+  }
+
+  .need-help a:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 992px) {
+    .order-sections {
+      grid-template-columns: 1fr;
+    }
   }
 
   @media (max-width: 768px) {
-    .order-header,
-    .order-sections {
-      display: block;
+    .order-details-page {
+      padding: 1rem 0.5rem;
     }
-
+    .order-card {
+      padding: 1.5rem;
+    }
+    .order-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
     .order-status {
       text-align: left;
-      margin-top: 1.5rem;
+      margin-top: 1rem;
     }
-
-    .order-items-section {
-      margin-bottom: 2rem;
-    }
-
-    .login-form {
-      flex-direction: column;
-    }
-
     .order-actions {
       flex-direction: column;
     }
-
-    .order-actions a,
-    .order-actions button {
+    .order-actions .btn {
       width: 100%;
-      margin-bottom: 0.5rem;
-    }
-
-    .items-table {
-      font-size: 0.9rem;
-    }
-
-    th,
-    td {
-      padding: 0.5rem;
     }
   }
 </style>

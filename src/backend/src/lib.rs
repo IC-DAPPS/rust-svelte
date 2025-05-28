@@ -167,6 +167,46 @@ fn get_order_details(order_id: u64, requestor_phone_number: String) -> Result<Or
     }
 }
 
+#[update]
+fn cancel_my_order(order_id: u64, requestor_phone_number: String) -> Result<Order, OrderError> {
+    if requestor_phone_number.trim().is_empty() {
+        return Err(OrderError::InvalidInput(
+            "Requestor phone number cannot be empty".to_string(),
+        ));
+    }
+
+    match store::get_order(order_id) {
+        Some(mut order) => {
+            if order.user_phone_number != requestor_phone_number {
+                return Err(OrderError::AccessDenied);
+            }
+
+            // Check if the order is in a cancellable state (e.g., Pending)
+            if order.status != OrderStatus::Pending {
+                return Err(OrderError::CannotCancelOrder(
+                    "Order can only be cancelled if it is in Pending status.".to_string(),
+                ));
+            }
+
+            let timestamp = time();
+            match store::update_order_status(order_id, OrderStatus::Cancelled, timestamp) {
+                Ok(updated_order) => Ok(updated_order),
+                Err(e) => {
+                    // Check if the error message indicates the order was not found
+                    // This could happen in a race condition if the order was deleted
+                    // or cancelled by another process between the get_order and update_order_status calls.
+                    if e.contains("not found") {
+                        Err(OrderError::OrderNotFound)
+                    } else {
+                        Err(OrderError::StorageError(e))
+                    }
+                }
+            }
+        }
+        None => Err(OrderError::OrderNotFound),
+    }
+}
+
 ///////////////////////////////////////////////////////////
 // ADMIN FUNCTIONS
 ///////////////////////////////////////////////////////////

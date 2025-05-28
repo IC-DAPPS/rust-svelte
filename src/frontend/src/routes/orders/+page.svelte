@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getMyOrders, createOrder } from "$lib/api";
-  import type { Order } from "$lib/types";
+  import { getMyOrders, createOrder, cancelMyOrder } from "$lib/api";
+  import type { Order, OrderItemInput } from "$lib/types";
   import { goto } from "$app/navigation";
   import { toastsStore } from "@dfinity/gix-components";
   import { cartStore } from "$lib/stores/cart";
@@ -44,6 +44,7 @@
       // Save phone number to localStorage for persistence
       localStorage.setItem("userPhoneNumber", phoneNumber);
       isLoggedIn = true;
+      attemptCount = 0; // Reset attempt count on new login
       loadOrders();
     }
   }
@@ -107,7 +108,7 @@
   async function repeatOrder(order: Order) {
     try {
       // Create order items input from the previous order
-      const orderItems = order.items.map((item) => ({
+      const orderItems: OrderItemInput[] = order.items.map((item) => ({
         product_id: item.product_id,
         quantity: item.quantity,
       }));
@@ -137,6 +138,33 @@
       console.error("Error repeating order:", error);
       toastsStore.show({
         text: "Failed to repeat order",
+        level: "error",
+      });
+    }
+  }
+
+  async function handleCancelOrder(orderId: bigint) {
+    if (!phoneNumber) {
+      toastsStore.show({
+        text: "Phone number is not available. Please log in again.",
+        level: "error",
+      });
+      return;
+    }
+    try {
+      const updatedOrder = await cancelMyOrder(orderId, phoneNumber);
+      if (updatedOrder) {
+        // Optionally, update the specific order in the list or reload all orders
+        // For simplicity, reloading all orders:
+        loadOrders();
+      }
+      // If updatedOrder is null, the cancelMyOrder function already showed a toast
+    } catch (err) {
+      // This catch is mostly for unexpected errors in the component itself,
+      // as cancelMyOrder handles its own errors including API errors.
+      console.error("Error in handleCancelOrder:", err);
+      toastsStore.show({
+        text: "An unexpected error occurred while trying to cancel the order.",
         level: "error",
       });
     }
@@ -247,7 +275,12 @@
               >View Details</a
             >
             {#if "Pending" in order.status}
-              <button class="btn btn-secondary">Cancel Order</button>
+              <button
+                class="btn btn-secondary"
+                on:click={() => handleCancelOrder(BigInt(order.id))}
+              >
+                Cancel Order
+              </button>
             {/if}
             {#if "Delivered" in order.status}
               <button

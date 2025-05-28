@@ -22,6 +22,7 @@ export interface Order {
   'items' : Array<OrderItem>,
 }
 export type OrderError = { 'AccessDenied' : null } |
+  { 'CannotCancelOrder' : string } |
   { 'InvalidInput' : string } |
   { 'InvalidProductInOrder' : bigint } |
   { 'OrderNotFound' : null } |
@@ -48,15 +49,15 @@ export interface Product {
 }
 export type Result = { 'Ok' : bigint } |
   { 'Err' : string };
-export type Result_1 = { 'Ok' : bigint } |
+export type Result_1 = { 'Ok' : Order } |
   { 'Err' : OrderError };
-export type Result_2 = { 'Ok' : null } |
-  { 'Err' : string };
-export type Result_3 = { 'Ok' : UserProfile } |
-  { 'Err' : string };
-export type Result_4 = { 'Ok' : Array<Order> } |
+export type Result_2 = { 'Ok' : bigint } |
   { 'Err' : OrderError };
-export type Result_5 = { 'Ok' : Order } |
+export type Result_3 = { 'Ok' : null } |
+  { 'Err' : string };
+export type Result_4 = { 'Ok' : UserProfile } |
+  { 'Err' : string };
+export type Result_5 = { 'Ok' : Array<Order> } |
   { 'Err' : OrderError };
 export type Result_6 = { 'Ok' : UserProfile } |
   { 'Err' : GetUserDataError };
@@ -74,22 +75,23 @@ export interface UserProfile {
 }
 export interface _SERVICE {
   'add_product_admin' : ActorMethod<[AddProductPayload], Result>,
+  'cancel_my_order' : ActorMethod<[bigint, string], Result_1>,
   'create_order' : ActorMethod<
     [string, Array<OrderItemInput>, string],
-    Result_1
+    Result_2
   >,
-  'create_profile' : ActorMethod<[UserProfile], Result_2>,
-  'delete_profile_admin' : ActorMethod<[string], Result_3>,
+  'create_profile' : ActorMethod<[UserProfile], Result_3>,
+  'delete_profile_admin' : ActorMethod<[string], Result_4>,
   'get_all_customers' : ActorMethod<[], Array<UserProfile>>,
-  'get_all_orders' : ActorMethod<[], Result_4>,
-  'get_my_orders' : ActorMethod<[string], Result_4>,
-  'get_order_details' : ActorMethod<[bigint, string], Result_5>,
-  'get_order_details_admin' : ActorMethod<[bigint], Result_5>,
+  'get_all_orders' : ActorMethod<[], Result_5>,
+  'get_my_orders' : ActorMethod<[string], Result_5>,
+  'get_order_details' : ActorMethod<[bigint, string], Result_1>,
+  'get_order_details_admin' : ActorMethod<[bigint], Result_1>,
   'get_products' : ActorMethod<[], Array<Product>>,
   'get_profile_by_phone' : ActorMethod<[string], Result_6>,
   'initialize_products' : ActorMethod<[], Result_7>,
   'is_dev_check' : ActorMethod<[], boolean>,
-  'update_order_status_admin' : ActorMethod<[bigint, OrderStatus], Result_5>,
+  'update_order_status_admin' : ActorMethod<[bigint, OrderStatus], Result_1>,
   'update_product_admin' : ActorMethod<[bigint, AddProductPayload], Result_8>,
   'update_profile' : ActorMethod<[UserProfile], Result_9>,
 }

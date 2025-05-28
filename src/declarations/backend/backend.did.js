@@ -6,27 +6,6 @@ export const idlFactory = ({ IDL }) => {
     'price' : IDL.Float64,
   });
   const Result = IDL.Variant({ 'Ok' : IDL.Nat64, 'Err' : IDL.Text });
-  const OrderItemInput = IDL.Record({
-    'product_id' : IDL.Nat64,
-    'quantity' : IDL.Float64,
-  });
-  const OrderError = IDL.Variant({
-    'AccessDenied' : IDL.Null,
-    'InvalidInput' : IDL.Text,
-    'InvalidProductInOrder' : IDL.Nat64,
-    'OrderNotFound' : IDL.Null,
-    'UserProfileNotFound' : IDL.Null,
-    'StorageError' : IDL.Text,
-  });
-  const Result_1 = IDL.Variant({ 'Ok' : IDL.Nat64, 'Err' : OrderError });
-  const UserProfile = IDL.Record({
-    'name' : IDL.Text,
-    'order_ids' : IDL.Vec(IDL.Nat64),
-    'address' : IDL.Text,
-    'phone_number' : IDL.Text,
-  });
-  const Result_2 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : IDL.Text });
-  const Result_3 = IDL.Variant({ 'Ok' : UserProfile, 'Err' : IDL.Text });
   const OrderStatus = IDL.Variant({
     'Delivered' : IDL.Null,
     'Confirmed' : IDL.Null,
@@ -50,8 +29,30 @@ export const idlFactory = ({ IDL }) => {
     'timestamp' : IDL.Nat64,
     'items' : IDL.Vec(OrderItem),
   });
-  const Result_4 = IDL.Variant({ 'Ok' : IDL.Vec(Order), 'Err' : OrderError });
-  const Result_5 = IDL.Variant({ 'Ok' : Order, 'Err' : OrderError });
+  const OrderError = IDL.Variant({
+    'AccessDenied' : IDL.Null,
+    'CannotCancelOrder' : IDL.Text,
+    'InvalidInput' : IDL.Text,
+    'InvalidProductInOrder' : IDL.Nat64,
+    'OrderNotFound' : IDL.Null,
+    'UserProfileNotFound' : IDL.Null,
+    'StorageError' : IDL.Text,
+  });
+  const Result_1 = IDL.Variant({ 'Ok' : Order, 'Err' : OrderError });
+  const OrderItemInput = IDL.Record({
+    'product_id' : IDL.Nat64,
+    'quantity' : IDL.Float64,
+  });
+  const Result_2 = IDL.Variant({ 'Ok' : IDL.Nat64, 'Err' : OrderError });
+  const UserProfile = IDL.Record({
+    'name' : IDL.Text,
+    'order_ids' : IDL.Vec(IDL.Nat64),
+    'address' : IDL.Text,
+    'phone_number' : IDL.Text,
+  });
+  const Result_3 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : IDL.Text });
+  const Result_4 = IDL.Variant({ 'Ok' : UserProfile, 'Err' : IDL.Text });
+  const Result_5 = IDL.Variant({ 'Ok' : IDL.Vec(Order), 'Err' : OrderError });
   const Product = IDL.Record({
     'id' : IDL.Nat64,
     'name' : IDL.Text,
@@ -73,29 +74,30 @@ export const idlFactory = ({ IDL }) => {
   const Result_9 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : GetUserDataError });
   return IDL.Service({
     'add_product_admin' : IDL.Func([AddProductPayload], [Result], []),
+    'cancel_my_order' : IDL.Func([IDL.Nat64, IDL.Text], [Result_1], []),
     'create_order' : IDL.Func(
         [IDL.Text, IDL.Vec(OrderItemInput), IDL.Text],
-        [Result_1],
+        [Result_2],
         [],
       ),
-    'create_profile' : IDL.Func([UserProfile], [Result_2], []),
-    'delete_profile_admin' : IDL.Func([IDL.Text], [Result_3], []),
+    'create_profile' : IDL.Func([UserProfile], [Result_3], []),
+    'delete_profile_admin' : IDL.Func([IDL.Text], [Result_4], []),
     'get_all_customers' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
-    'get_all_orders' : IDL.Func([], [Result_4], ['query']),
-    'get_my_orders' : IDL.Func([IDL.Text], [Result_4], ['query']),
+    'get_all_orders' : IDL.Func([], [Result_5], ['query']),
+    'get_my_orders' : IDL.Func([IDL.Text], [Result_5], ['query']),
     'get_order_details' : IDL.Func(
         [IDL.Nat64, IDL.Text],
-        [Result_5],
+        [Result_1],
         ['query'],
       ),
-    'get_order_details_admin' : IDL.Func([IDL.Nat64], [Result_5], ['query']),
+    'get_order_details_admin' : IDL.Func([IDL.Nat64], [Result_1], ['query']),
     'get_products' : IDL.Func([], [IDL.Vec(Product)], ['query']),
     'get_profile_by_phone' : IDL.Func([IDL.Text], [Result_6], ['query']),
     'initialize_products' : IDL.Func([], [Result_7], []),
     'is_dev_check' : IDL.Func([], [IDL.Bool], ['query']),
     'update_order_status_admin' : IDL.Func(
         [IDL.Nat64, OrderStatus],
-        [Result_5],
+        [Result_1],
         [],
       ),
     'update_product_admin' : IDL.Func(

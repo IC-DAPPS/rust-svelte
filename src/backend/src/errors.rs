@@ -15,4 +15,5 @@ pub enum OrderError {
     OrderNotFound,
     AccessDenied,
     StorageError(String),
+    CannotCancelOrder(String),
 }

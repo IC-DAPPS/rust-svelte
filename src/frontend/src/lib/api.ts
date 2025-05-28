@@ -441,3 +441,59 @@ export async function updateOrderStatusAdmin(orderId: bigint, newStatus: OrderSt
     return false;
   }
 }
+
+export async function cancelMyOrder(orderId: bigint, phoneNumber: string): Promise<Order | null> {
+  try {
+    const result = await backendActor.cancel_my_order(orderId, phoneNumber);
+    if ("Ok" in result) {
+      toastsStore.show({
+        text: "Order cancelled successfully!",
+        level: "success",
+      });
+      // Convert backend order to frontend order
+      const backendOrder = result.Ok;
+      return {
+        id: Number(backendOrder.id),
+        status: backendOrder.status, // Assuming OrderStatus is compatible
+        total_amount: Number(backendOrder.total_amount),
+        last_updated: Number(backendOrder.last_updated),
+        user_phone_number: backendOrder.user_phone_number,
+        delivery_address: backendOrder.delivery_address,
+        timestamp: Number(backendOrder.timestamp),
+        items: backendOrder.items.map(item => ({
+          product_id: Number(item.product_id),
+          quantity: Number(item.quantity),
+          price_per_unit_at_order: Number(item.price_per_unit_at_order)
+        }))
+      };
+    } else {
+      console.error("Failed to cancel order:", result.Err);
+      let errorMessage = "Failed to cancel order.";
+      if (result.Err && 'CannotCancelOrder' in result.Err) {
+        errorMessage = result.Err.CannotCancelOrder;
+      } else if (result.Err && 'OrderNotFound' in result.Err) {
+        errorMessage = "Order not found.";
+      } else if (result.Err && 'AccessDenied' in result.Err) {
+        errorMessage = "You do not have permission to cancel this order.";
+      } else if (result.Err && 'InvalidInput' in result.Err) {
+        errorMessage = `Invalid input: ${result.Err.InvalidInput}`;
+      } else if (result.Err && 'UserProfileNotFound' in result.Err) {
+        errorMessage = "User profile not found.";
+      } else if (result.Err && 'StorageError' in result.Err) {
+        errorMessage = `Storage error: ${result.Err.StorageError}`;
+      }
+      toastsStore.show({
+        text: errorMessage,
+        level: "error",
+      });
+      return null;
+    }
+  } catch (error) {
+    console.error("Error cancelling order:", error);
+    toastsStore.show({
+      text: "An unexpected error occurred while cancelling the order.",
+      level: "error",
+    });
+    return null;
+  }
+}
