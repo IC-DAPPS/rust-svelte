@@ -3,8 +3,21 @@
   import { page } from "$app/stores";
   import { isEnglish } from "$lib/stores/languageStore";
   import { userStore } from "$lib/stores/userStore";
+  import { onMount } from "svelte";
 
   let mobileMenuOpen = false;
+  let itemCount = 0;
+
+  onMount(() => {
+    // Subscribe to cartStore updates
+    const unsubscribe = cartItemCount.subscribe((count) => {
+      itemCount = count;
+    });
+
+    return () => {
+      unsubscribe(); // Clean up subscription on component destroy
+    };
+  });
 
   function toggleMobileMenu() {
     mobileMenuOpen = !mobileMenuOpen;
@@ -20,6 +33,11 @@
     <div class="container">
       <div class="navbar-content">
         <a href="/" class="logo">
+          <img
+            src="/images/logo/logo.jpg"
+            alt="Kaniya Dairy Logo"
+            class="logo-img"
+          />
           <span class="logo-text">Kaniya Dairy</span>
         </a>
 
@@ -136,6 +154,12 @@
     font-weight: bold;
     color: #5eaa6f;
     margin-left: 0.5rem;
+  }
+
+  .logo-img {
+    height: 40px;
+    margin-right: 10px;
+    border-radius: 4px;
   }
 
   .menu-container {

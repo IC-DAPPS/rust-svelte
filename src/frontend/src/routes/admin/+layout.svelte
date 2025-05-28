@@ -76,6 +76,11 @@
 
     <aside class="admin-sidebar" class:sidebar-open={isMobileMenuOpen}>
       <div class="admin-logo">
+        <img
+          src="/images/logo/logo.jpg"
+          alt="Kaniya Dairy Logo"
+          class="sidebar-logo-img"
+        />
         <h2>Kaniya Admin</h2>
       </div>
       <nav class="admin-nav">
@@ -174,12 +179,23 @@
   .admin-logo {
     padding: 1.5rem 1rem;
     border-bottom: 1px solid #444;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
   }
 
   .admin-logo h2 {
     margin: 0;
+    margin-top: 5px;
     font-size: 1.4rem;
     color: #5eaa6f;
+  }
+
+  .sidebar-logo-img {
+    height: 45px;
+    margin-bottom: 5px;
+    border-radius: 4px;
   }
 
   .admin-nav {
