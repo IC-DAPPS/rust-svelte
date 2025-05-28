@@ -307,7 +307,7 @@
           <tbody>
             {#each currentDayOrders as order (order.id)}
               <tr>
-                <td>#{order.id}</td>
+                <td>{order.id}</td>
                 <td>{order.user_phone_number}</td>
                 <td>
                   <div class="order-items">
