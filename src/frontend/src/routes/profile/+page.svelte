@@ -234,7 +234,7 @@
 </script>
 
 <svelte:head>
-  <title>My Profile - Kaniya Dairy</title>
+  <title>My Profile - Kanhiya Dairy</title>
 </svelte:head>
 
 <div class="profile-page container">

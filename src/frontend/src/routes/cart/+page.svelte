@@ -129,7 +129,7 @@
 </script>
 
 <svelte:head>
-  <title>Your Cart - Kaniya Dairy</title>
+  <title>Your Cart - Kanhiya Dairy</title>
 </svelte:head>
 
 <div class="cart-page container">

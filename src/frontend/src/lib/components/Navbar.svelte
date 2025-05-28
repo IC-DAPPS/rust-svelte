@@ -35,10 +35,10 @@
         <a href="/" class="logo">
           <img
             src="/images/logo/logo.jpg"
-            alt="Kaniya Dairy Logo"
+            alt="Kanhiya Dairy Logo"
             class="logo-img"
           />
-          <span class="logo-text">Kaniya Dairy</span>
+          <span class="logo-text">Kanhiya Dairy</span>
         </a>
 
         <button

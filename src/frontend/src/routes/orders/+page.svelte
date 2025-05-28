@@ -172,7 +172,7 @@
 </script>
 
 <svelte:head>
-  <title>My Orders - Kaniya Dairy</title>
+  <title>My Orders - Kanhiya Dairy</title>
 </svelte:head>
 
 <div class="orders-page container">

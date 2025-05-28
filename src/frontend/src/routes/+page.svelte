@@ -26,13 +26,13 @@
 </script>
 
 <svelte:head>
-  <title>Kaniya Dairy - Fresh Dairy Products</title>
+  <title>Kanhiya Dairy - Fresh Dairy Products</title>
 </svelte:head>
 
 <div class="homepage">
   <section class="hero">
     <div class="hero-content">
-      <h1>Kaniya Dairy</h1>
+      <h1>Kanhiya Dairy</h1>
       <p>Fresh Dairy Products Delivered Daily</p>
       <a href="#products" class="btn-primary">Shop Now</a>
     </div>

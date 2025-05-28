@@ -3,13 +3,13 @@
 </script>
 
 <svelte:head>
-  <title>{$isEnglish ? "About Us" : "हमारे बारे में"} - Kaniya Dairy</title>
+  <title>{$isEnglish ? "About Us" : "हमारे बारे में"} - Kanhiya Dairy</title>
 </svelte:head>
 
 <div class="about-page">
   <div class="banner">
     <div class="container">
-      <h1>{$isEnglish ? "About Kaniya Dairy" : "कानिया डेयरी के बारे में"}</h1>
+      <h1>{$isEnglish ? "About Kanhiya Dairy" : "कानिया डेयरी के बारे में"}</h1>
       <p>
         {$isEnglish
           ? "Delivering fresh dairy products since 2010"
@@ -24,7 +24,7 @@
         <h2>{$isEnglish ? "Our Story" : "हमारी कहानी"}</h2>
         {#if $isEnglish}
           <p>
-            Kaniya Dairy has been serving the Suhagi, Jabalpur area for over 15
+            Kanhiya Dairy has been serving the Suhagi, Jabalpur area for over 15
             years. What started as a small family business has grown into a
             trusted local dairy supplier, known for our commitment to quality
             and freshness.
@@ -120,8 +120,8 @@
           </p>
           {#if $isEnglish}
             <p class="member-bio">
-              Started Kaniya Dairy with a vision to provide pure and fresh dairy
-              products to the community.
+              Started Kanhiya Dairy with a vision to provide pure and fresh
+              dairy products to the community.
             </p>
           {:else}
             <p class="member-bio">
@@ -142,7 +142,7 @@
           </p>
           {#if $isEnglish}
             <p class="member-bio">
-              Developed the Kaniya Dairy app to make ordering dairy products
+              Developed the Kanhiya Dairy app to make ordering dairy products
               more convenient.
             </p>
           {:else}
@@ -185,7 +185,7 @@
         <div class="testimonial">
           {#if $isEnglish}
             <div class="quote">
-              "I've been buying milk from Kaniya Dairy for over 10 years.
+              "I've been buying milk from Kanhiya Dairy for over 10 years.
               Nothing compares to their freshness and taste!"
             </div>
             <div class="author">- Ravi Sharma, Suhagi</div>
@@ -235,7 +235,7 @@
       <div class="contact-details">
         <div class="contact-info">
           <h3>{$isEnglish ? "Visit Our Shop" : "हमारी दुकान पर जाएँ"}</h3>
-          <p>{$isEnglish ? "Kaniya Dairy Shop" : "कानिया डेयरी की दुकान"}</p>
+          <p>{$isEnglish ? "Kanhiya Dairy Shop" : "कानिया डेयरी की दुकान"}</p>
           <p>{$isEnglish ? "Behind TI Bunglow" : "टी.आई. बंगले के पीछे"}</p>
           <p>{$isEnglish ? "Suhagi, Jabalpur" : "सुहागी, जबलपुर"}</p>
           <p>{$isEnglish ? "Madhya Pradesh, 482001" : "मध्य प्रदेश, ४८२००१"}</p>
@@ -244,8 +244,8 @@
           </p>
           <p>
             {$isEnglish
-              ? "Email: info@kaniyadairy.com"
-              : "ईमेल: info@kaniyadairy.com"}
+              ? "Email: info@Kanhiyadairy.com"
+              : "ईमेल: info@Kanhiyadairy.com"}
           </p>
           <p>
             {$isEnglish

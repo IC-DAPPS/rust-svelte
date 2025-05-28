@@ -156,8 +156,8 @@
 <svelte:head>
   <title
     >{order
-      ? `Order #${order.id.toString()} - Kaniya Dairy`
-      : "Order Details - Kaniya Dairy"}</title
+      ? `Order #${order.id.toString()} - Kanhiya Dairy`
+      : "Order Details - Kanhiya Dairy"}</title
   >
 </svelte:head>
 

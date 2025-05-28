@@ -105,7 +105,12 @@
         Order <span class="order-id-label">No:</span>
         <span class="order-id-highlight">{String(order.id)}</span>
       </h1>
-      <a href="/admin/orders" class="back-link button-link" style="background-color: var(--color-success, #28a745); color: black;">Back to List</a>
+      <a
+        href="/admin/orders"
+        class="back-link button-link"
+        style="background-color: var(--color-success, #28a745); color: black;"
+        >Back to List</a
+      >
     </div>
 
     <div class="details-card">
@@ -207,7 +212,7 @@
     font-weight: normal; /* Label doesn't need to be bold */
   }
   .order-id-highlight {
-    color: #5eaa6f; /* Kaniya Dairy green */
+    color: #5eaa6f; /* Kanhiya Dairy green */
     font-weight: bold;
   }
   .back-link {
