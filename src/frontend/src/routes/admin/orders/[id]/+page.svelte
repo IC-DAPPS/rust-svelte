@@ -133,6 +133,10 @@
         <div class="detail-section">
           <h2>Customer & Delivery</h2>
           <p>
+            <strong>Customer Name:</strong>
+            {order.customer_name || "N/A"}
+          </p>
+          <p>
             <strong>Customer Phone:</strong>
             <a href={`tel:${order.user_phone_number}`}
               >{order.user_phone_number}</a
