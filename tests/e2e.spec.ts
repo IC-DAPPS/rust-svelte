@@ -71,7 +71,7 @@ test.describe('Kanhaiya Dairy E2E Test Suite', () => {
             await page.getByRole('button', { name: 'हिंदी' }).click();
             // Expect "About Us" to change to Hindi
             await expect(page.getByRole('navigation').getByRole('link', { name: 'हमारे बारे में' })).toBeVisible();
-            await expect(page.getByRole('heading', { name: 'कानिया डेयरी के बारे में' })).toBeVisible();
+            await expect(page.getByRole('heading', { name: 'कन्हैया डेयरी के बारे में' })).toBeVisible();
 
 
             await page.getByRole('button', { name: 'English' }).click();
