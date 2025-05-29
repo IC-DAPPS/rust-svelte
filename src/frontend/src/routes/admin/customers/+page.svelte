@@ -6,7 +6,6 @@
 
   // Define Customer interface extending UserProfile for admin display
   interface Customer extends UserProfile {
-    email?: string; // Optional email field
     created_at?: number; // When the user was created
     // orders_count?: number; // Removed
     // has_active_subscription?: boolean; // Removed
@@ -33,7 +32,6 @@
 
       customers = userData.map((user) => ({
         ...user,
-        email: `${user.phone_number}@example.com`, // Placeholder email
         created_at: Date.now() - Math.floor(Math.random() * 30) * 86400000, // Random date
       }));
 
@@ -62,7 +60,6 @@
     return (
       customer.phone_number.includes(query) ||
       customer.name.toLowerCase().includes(query) ||
-      (customer.email && customer.email.toLowerCase().includes(query)) ||
       customer.address.toLowerCase().includes(query)
     );
   });
@@ -91,7 +88,7 @@
       <input
         type="text"
         class="search-input"
-        placeholder="Search by name, phone, email, or address..."
+        placeholder="Search by name, phone, or address..."
         bind:value={searchQuery}
       />
     </div>
@@ -124,7 +121,6 @@
             <tr>
               <th>Phone Number</th>
               <th>Name</th>
-              <th>Email</th>
               <th>Address</th>
               <th>Customer Since</th>
               <th>Actions</th>
@@ -135,7 +131,6 @@
               <tr>
                 <td>{customer.phone_number}</td>
                 <td>{customer.name}</td>
-                <td>{customer.email || "N/A"}</td>
                 <td class="address-cell">{customer.address}</td>
                 <td
                   >{customer.created_at

@@ -18,6 +18,7 @@ type Order = record {
   delivery_address : text;
   timestamp : nat64;
   items : vec OrderItem;
+  customer_name : text;
 };
 type OrderError = variant {
   AccessDenied;

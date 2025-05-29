@@ -39,6 +39,7 @@ export interface Order {
     total_amount: number;
     last_updated: number;
     user_phone_number: string;
+    customer_name?: string;
     delivery_address: string;
     timestamp: number;
     items: OrderItem[];

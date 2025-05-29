@@ -20,6 +20,7 @@ export interface Order {
   'delivery_address' : string,
   'timestamp' : bigint,
   'items' : Array<OrderItem>,
+  'customer_name' : string,
 }
 export type OrderError = { 'AccessDenied' : null } |
   { 'CannotCancelOrder' : string } |

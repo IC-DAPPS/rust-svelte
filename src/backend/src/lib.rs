@@ -121,6 +121,7 @@ fn create_order(
     let order = Order {
         id: order_id,
         user_phone_number: phone_number.clone(),
+        customer_name: user_profile.name.clone(),
         items: order_items,
         total_amount,
         status: OrderStatus::Pending,

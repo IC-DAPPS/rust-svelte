@@ -4,6 +4,7 @@ use std::{borrow::Cow, cell::RefCell};
 
 use super::memory::{Memory, MEMORY_MANAGER};
 use crate::models::{Order, OrderStatus};
+use crate::store::user::get_user_profile;
 
 // Implement Storable for Order using Candid encoding
 impl Storable for Order {
@@ -109,7 +110,17 @@ pub fn get_all_orders() -> Vec<Order> {
         orders_map
             .borrow()
             .iter()
-            .map(|(_, order)| order.clone())
+            .map(|(_, order)| {
+                let mut order_clone = order.clone();
+                // Fetch customer name
+                if let Some(profile) = get_user_profile(&order.user_phone_number) {
+                    order_clone.customer_name = profile.name;
+                } else {
+                    // Handle case where profile is not found, maybe set a default or leave empty
+                    order_clone.customer_name = "N/A".to_string(); // Or String::new()
+                }
+                order_clone
+            })
             .collect()
     })
 }

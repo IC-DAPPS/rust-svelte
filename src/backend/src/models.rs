@@ -51,6 +51,7 @@ impl Default for OrderStatus {
 pub struct Order {
     pub id: u64,                   // Unique order ID
     pub user_phone_number: String, // Link to the user who placed the order
+    pub customer_name: String,     // Customer's name
     pub items: Vec<OrderItem>,
     pub total_amount: f64, // Calculated total amount for the order
     pub status: OrderStatus,

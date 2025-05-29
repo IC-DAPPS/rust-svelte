@@ -28,6 +28,7 @@ export const idlFactory = ({ IDL }) => {
     'delivery_address' : IDL.Text,
     'timestamp' : IDL.Nat64,
     'items' : IDL.Vec(OrderItem),
+    'customer_name' : IDL.Text,
   });
   const OrderError = IDL.Variant({
     'AccessDenied' : IDL.Null,

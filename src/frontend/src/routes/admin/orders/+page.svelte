@@ -295,7 +295,7 @@
           <thead>
             <tr>
               <th>Order ID</th>
-              <th>Customer</th>
+              <th class="customer-col">Customer / Phone</th>
               <th>Items</th>
               <th>Amount</th>
               <th>Date</th>
@@ -308,7 +308,11 @@
             {#each currentDayOrders as order (order.id)}
               <tr>
                 <td>{order.id}</td>
-                <td>{order.user_phone_number}</td>
+                <td>
+                  {order.customer_name || "N/A"}
+                  <br />
+                  <small>{order.user_phone_number}</small>
+                </td>
                 <td>
                   <div class="order-items">
                     {#if order.items && order.items.length > 0}
@@ -330,7 +334,7 @@
                     {/if}
                   </div>
                 </td>
-                <td>₹{order.total_amount}</td>
+                <td class="amount-cell">₹{order.total_amount}</td>
                 <td>{formatDate(order.timestamp)}</td>
                 <td>
                   <select
@@ -464,6 +468,7 @@
   .orders-table th {
     background-color: #f5f5f5;
     font-weight: 600;
+    color: #333;
   }
 
   .order-items {
@@ -657,5 +662,17 @@
     text-align: center;
     padding: 2rem;
     color: #666;
+  }
+
+  .orders-table td.amount-cell {
+    font-weight: 500;
+    color: #2e7d32;
+  }
+
+  .customer-col {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 </style>

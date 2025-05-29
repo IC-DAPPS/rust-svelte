@@ -102,6 +102,7 @@ export async function getAllOrders(): Promise<Order[]> {
         total_amount: Number(order.total_amount),
         last_updated: Number(order.last_updated),
         user_phone_number: order.user_phone_number,
+        customer_name: order.customer_name,
         delivery_address: order.delivery_address,
         timestamp: Number(order.timestamp),
         items: order.items.map(item => ({
