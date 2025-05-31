@@ -1,14 +1,20 @@
-import { toastsStore } from "@dfinity/gix-components";
-import { backendActor } from "./agent";
-import type { Product, UserProfile, Order, OrderItemInput, OrderStatus } from "./types";
+import { backendActorPromise } from "./agent";
+import type { Product as FrontendProduct, UserProfile, Order as FrontendOrder, OrderItemInput, OrderStatus } from "./types";
+
+// Simple custom toast function
+function showToast({ text, level }: { text: string, level: string }) {
+  // For now, just log to console. Replace with UI toast if needed.
+  console[level === 'error' ? 'error' : 'log'](`[${level.toUpperCase()}] ${text}`);
+}
 
 // Products
-export async function getProducts(): Promise<Product[]> {
+export async function getProducts(): Promise<FrontendProduct[]> {
   try {
-    const result = await backendActor.get_products();
+    const actor = await backendActorPromise;
+    const result = await actor.get_products();
     // Ensure we're handling the response correctly
     // Convert backend product format to frontend format
-    return (result || []).map(item => {
+    return (result || []).map((item: any) => {
       let imageName;
       if (item.name === "Matha") {
         imageName = 'buttermilk.jpg';
@@ -25,8 +31,7 @@ export async function getProducts(): Promise<Product[]> {
       };
     });
   } catch (error) {
-    console.error("Error fetching products:", error);
-    toastsStore.show({
+    showToast({
       text: "Failed to fetch products",
       level: "error",
     });
@@ -35,8 +40,9 @@ export async function getProducts(): Promise<Product[]> {
 }
 
 // Admin API functions for products
-export async function addProduct(product: Omit<Product, 'id'>): Promise<Product | null> {
+export async function addProduct(product: Omit<FrontendProduct, 'id'>): Promise<FrontendProduct | null> {
   try {
+    const actor = await backendActorPromise;
     const payload = {
       name: product.name,
       unit: product.unit,
@@ -44,7 +50,7 @@ export async function addProduct(product: Omit<Product, 'id'>): Promise<Product 
       price: product.price
     };
 
-    const result = await backendActor.add_product_admin(payload);
+    const result = await actor.add_product_admin(payload);
 
     if ('Ok' in result) {
       const productId = Number(result.Ok);
@@ -53,16 +59,14 @@ export async function addProduct(product: Omit<Product, 'id'>): Promise<Product 
         ...product
       };
     } else {
-      console.error("Failed to add product:", result.Err);
-      toastsStore.show({
+      showToast({
         text: "Failed to add product: " + result.Err,
         level: "error",
       });
       return null;
     }
   } catch (error) {
-    console.error("Error adding product:", error);
-    toastsStore.show({
+    showToast({
       text: "Failed to add product",
       level: "error",
     });
@@ -73,16 +77,16 @@ export async function addProduct(product: Omit<Product, 'id'>): Promise<Product 
 // Admin functions for customers
 export async function getAllCustomers(): Promise<UserProfile[]> {
   try {
-    const result = await backendActor.get_all_customers();
-    return result.map(customer => ({
+    const actor = await backendActorPromise;
+    const result = await actor.get_all_customers();
+    return result.map((customer: any) => ({
       name: customer.name,
       address: customer.address,
       phone_number: customer.phone_number,
-      order_ids: Array.from(customer.order_ids).map(id => Number(id))
+      order_ids: Array.from(customer.order_ids).map((id: any) => Number(id))
     }));
   } catch (error) {
-    console.error("Error fetching customers:", error);
-    toastsStore.show({
+    showToast({
       text: "Saare customers fetch karne mein error aaya",
       level: "error",
     });
@@ -91,12 +95,13 @@ export async function getAllCustomers(): Promise<UserProfile[]> {
 }
 
 // Admin functions for orders
-export async function getAllOrders(): Promise<Order[]> {
+export async function getAllOrders(): Promise<FrontendOrder[]> {
   try {
-    const result = await backendActor.get_all_orders();
+    const actor = await backendActorPromise;
+    const result = await actor.get_all_orders();
 
     if ("Ok" in result) {
-      return result.Ok.map(order => ({
+      return result.Ok.map((order: any) => ({
         id: Number(order.id),
         status: order.status,
         total_amount: Number(order.total_amount),
@@ -105,23 +110,21 @@ export async function getAllOrders(): Promise<Order[]> {
         customer_name: order.customer_name,
         delivery_address: order.delivery_address,
         timestamp: Number(order.timestamp),
-        items: order.items.map(item => ({
+        items: order.items.map((item: any) => ({
           product_id: Number(item.product_id),
           quantity: Number(item.quantity),
           price_per_unit_at_order: Number(item.price_per_unit_at_order)
         }))
       }));
     } else {
-      console.log("Orders fetch karne mein error:", result.Err);
-      toastsStore.show({
+      showToast({
         text: `Orders fetch karne mein fail: ${result.Err}`,
         level: "error",
       });
       return [];
     }
   } catch (error) {
-    console.error("Orders fetch karne mein error:", error);
-    toastsStore.show({
+    showToast({
       text: "Saare orders fetch karne mein fail",
       level: "error",
     });
@@ -132,7 +135,8 @@ export async function getAllOrders(): Promise<Order[]> {
 // User Profile
 export async function getProfileByPhone(phoneNumber: string): Promise<UserProfile | null> {
   try {
-    const result = await backendActor.get_profile_by_phone(phoneNumber);
+    const actor = await backendActorPromise;
+    const result = await actor.get_profile_by_phone(phoneNumber);
     if (result && "Ok" in result) {
       const profile = result.Ok;
       return {
@@ -144,7 +148,7 @@ export async function getProfileByPhone(phoneNumber: string): Promise<UserProfil
     }
     return null;
   } catch (error) {
-    toastsStore.show({
+    showToast({
       text: "Failed to fetch user profile",
       level: "error",
     });
@@ -159,6 +163,7 @@ export async function getProfile(phoneNumber: string): Promise<UserProfile | nul
 
 export async function createProfile(profile: UserProfile): Promise<boolean> {
   try {
+    const actor = await backendActorPromise;
     const profileToSend = {
       name: profile.name,
       address: profile.address,
@@ -170,18 +175,18 @@ export async function createProfile(profile: UserProfile): Promise<boolean> {
     console.log("order_ids type:", Array.isArray(profileToSend.order_ids) ? "Array" : typeof profileToSend.order_ids);
     console.log("order_ids value:", profileToSend.order_ids);
 
-    const result = await backendActor.create_profile(profileToSend);
+    const result = await actor.create_profile(profileToSend);
     console.log("Backend create_profile result:", result);
 
     if ("Ok" in result) {
-      toastsStore.show({
+      showToast({
         text: "Profile created successfully",
         level: "success",
       });
       return true;
     } else {
       console.error("Backend returned error:", result.Err);
-      toastsStore.show({
+      showToast({
         text: `Failed to create profile: ${result.Err}`,
         level: "error",
       });
@@ -189,7 +194,7 @@ export async function createProfile(profile: UserProfile): Promise<boolean> {
     }
   } catch (error) {
     console.error("Exception in createProfile:", error);
-    toastsStore.show({
+    showToast({
       text: "Failed to create profile",
       level: "error",
     });
@@ -199,6 +204,7 @@ export async function createProfile(profile: UserProfile): Promise<boolean> {
 
 export async function updateProfile(profile: UserProfile): Promise<boolean> {
   try {
+    const actor = await backendActorPromise;
     const profileToSend = {
       name: profile.name,
       address: profile.address,
@@ -206,22 +212,22 @@ export async function updateProfile(profile: UserProfile): Promise<boolean> {
       order_ids: profile.order_ids.map(id => BigInt(id))
     };
 
-    const result = await backendActor.update_profile(profileToSend);
+    const result = await actor.update_profile(profileToSend);
     if ("Ok" in result) {
-      toastsStore.show({
+      showToast({
         text: "Profile updated successfully",
         level: "success",
       });
       return true;
     } else {
-      toastsStore.show({
+      showToast({
         text: `Failed to update profile: ${result.Err}`,
         level: "error",
       });
       return false;
     }
   } catch (error) {
-    toastsStore.show({
+    showToast({
       text: "Failed to update profile",
       level: "error",
     });
@@ -232,14 +238,15 @@ export async function updateProfile(profile: UserProfile): Promise<boolean> {
 // Orders
 export async function createOrder(phoneNumber: string, items: OrderItemInput[], deliveryAddress: string): Promise<bigint | null> {
   try {
+    const actor = await backendActorPromise;
     const itemsToSend = items.map(item => ({
       ...item,
       product_id: BigInt(item.product_id)
     }));
 
-    const result = await backendActor.create_order(phoneNumber, itemsToSend, deliveryAddress);
+    const result = await actor.create_order(phoneNumber, itemsToSend, deliveryAddress);
     if ("Ok" in result) {
-      toastsStore.show({
+      showToast({
         text: "Order created successfully!",
         level: "success",
       });
@@ -250,16 +257,14 @@ export async function createOrder(phoneNumber: string, items: OrderItemInput[], 
 
       return result.Ok;
     } else {
-      console.error("Failed to create order:", result.Err);
-      toastsStore.show({
+      showToast({
         text: `Failed to create order: ${JSON.stringify(result.Err)}`,
         level: "error",
       });
       return null;
     }
   } catch (error) {
-    console.error("Error creating order:", error);
-    toastsStore.show({
+    showToast({
       text: "Failed to create order",
       level: "error",
     });
@@ -267,11 +272,12 @@ export async function createOrder(phoneNumber: string, items: OrderItemInput[], 
   }
 }
 
-export async function getMyOrders(phoneNumber: string): Promise<Order[]> {
+export async function getMyOrders(phoneNumber: string): Promise<FrontendOrder[]> {
   try {
-    const result = await backendActor.get_my_orders(phoneNumber);
+    const actor = await backendActorPromise;
+    const result = await actor.get_my_orders(phoneNumber);
     if ("Ok" in result) {
-      return result.Ok.map(order => ({
+      return result.Ok.map((order: any) => ({
         id: Number(order.id),
         status: order.status,
         total_amount: Number(order.total_amount),
@@ -279,23 +285,21 @@ export async function getMyOrders(phoneNumber: string): Promise<Order[]> {
         user_phone_number: order.user_phone_number,
         delivery_address: order.delivery_address,
         timestamp: Number(order.timestamp),
-        items: order.items.map(item => ({
+        items: order.items.map((item: any) => ({
           product_id: Number(item.product_id),
           quantity: Number(item.quantity),
           price_per_unit_at_order: Number(item.price_per_unit_at_order)
         }))
       }));
     } else {
-      console.error("Failed to fetch orders:", result.Err);
-      toastsStore.show({
+      showToast({
         text: `Failed to fetch orders: ${JSON.stringify(result.Err)}`,
         level: "error",
       });
       return [];
     }
   } catch (error) {
-    console.error("Error fetching orders:", error);
-    toastsStore.show({
+    showToast({
       text: "Failed to fetch orders",
       level: "error",
     });
@@ -303,11 +307,12 @@ export async function getMyOrders(phoneNumber: string): Promise<Order[]> {
   }
 }
 
-export async function getOrderDetails(orderId: bigint, phoneNumber: string): Promise<Order | null> {
+export async function getOrderDetails(orderId: bigint, phoneNumber: string): Promise<FrontendOrder | null> {
   try {
-    const result = await backendActor.get_order_details(orderId, phoneNumber);
+    const actor = await backendActorPromise;
+    const result = await actor.get_order_details(orderId, phoneNumber);
     if ("Ok" in result) {
-      const order = result.Ok;
+      const order: any = result.Ok;
       return {
         id: Number(order.id),
         status: order.status,
@@ -316,23 +321,21 @@ export async function getOrderDetails(orderId: bigint, phoneNumber: string): Pro
         user_phone_number: order.user_phone_number,
         delivery_address: order.delivery_address,
         timestamp: Number(order.timestamp),
-        items: order.items.map(item => ({
+        items: order.items.map((item: any) => ({
           product_id: Number(item.product_id),
           quantity: Number(item.quantity),
           price_per_unit_at_order: Number(item.price_per_unit_at_order)
         }))
       };
     } else {
-      console.error("Failed to fetch order details:", result.Err);
-      toastsStore.show({
+      showToast({
         text: `Failed to fetch order details: ${JSON.stringify(result.Err)}`,
         level: "error",
       });
       return null;
     }
   } catch (error) {
-    console.error("Error fetching order details:", error);
-    toastsStore.show({
+    showToast({
       text: "Failed to fetch order details",
       level: "error",
     });
@@ -340,8 +343,9 @@ export async function getOrderDetails(orderId: bigint, phoneNumber: string): Pro
   }
 }
 
-export async function updateProduct(product: Product): Promise<Product | null> {
+export async function updateProduct(product: FrontendProduct): Promise<FrontendProduct | null> {
   try {
+    const actor = await backendActorPromise;
     const payload = {
       name: product.name,
       unit: product.unit,
@@ -349,7 +353,7 @@ export async function updateProduct(product: Product): Promise<Product | null> {
       price: product.price
     };
 
-    const result = await backendActor.update_product_admin(BigInt(product.id), payload);
+    const result = await actor.update_product_admin(BigInt(product.id), payload);
 
     if ('Ok' in result) {
       const updatedProduct = result.Ok;
@@ -362,16 +366,14 @@ export async function updateProduct(product: Product): Promise<Product | null> {
         imageUrl: product.imageUrl // Keep the existing image URL
       };
     } else {
-      console.error("Failed to update product:", result.Err);
-      toastsStore.show({
+      showToast({
         text: "Failed to update product: " + result.Err,
         level: "error",
       });
       return null;
     }
   } catch (error) {
-    console.error("Error updating product:", error);
-    toastsStore.show({
+    showToast({
       text: "Failed to update product",
       level: "error",
     });
@@ -379,11 +381,12 @@ export async function updateProduct(product: Product): Promise<Product | null> {
   }
 }
 
-export async function getOrderDetailsAdmin(orderId: bigint): Promise<Order | null> {
+export async function getOrderDetailsAdmin(orderId: bigint): Promise<FrontendOrder | null> {
   try {
-    const result = await backendActor.get_order_details_admin(orderId);
+    const actor = await backendActorPromise;
+    const result = await actor.get_order_details_admin(orderId);
     if ("Ok" in result) {
-      const order = result.Ok;
+      const order: any = result.Ok;
       return {
         id: Number(order.id),
         status: order.status,
@@ -393,23 +396,21 @@ export async function getOrderDetailsAdmin(orderId: bigint): Promise<Order | nul
         customer_name: order.customer_name,
         delivery_address: order.delivery_address,
         timestamp: Number(order.timestamp),
-        items: order.items.map(item => ({
+        items: order.items.map((item: any) => ({
           product_id: Number(item.product_id),
           quantity: Number(item.quantity),
           price_per_unit_at_order: Number(item.price_per_unit_at_order)
         }))
       };
     } else {
-      console.error("Failed to fetch order details:", result.Err);
-      toastsStore.show({
+      showToast({
         text: `Failed to fetch order details: ${JSON.stringify(result.Err)}`,
         level: "error",
       });
       return null;
     }
   } catch (error) {
-    console.error("Error fetching order details:", error);
-    toastsStore.show({
+    showToast({
       text: "Failed to fetch order details",
       level: "error",
     });
@@ -419,24 +420,23 @@ export async function getOrderDetailsAdmin(orderId: bigint): Promise<Order | nul
 
 export async function updateOrderStatusAdmin(orderId: bigint, newStatus: OrderStatus): Promise<boolean> {
   try {
-    const result = await backendActor.update_order_status_admin(orderId, newStatus);
+    const actor = await backendActorPromise;
+    const result = await actor.update_order_status_admin(orderId, newStatus);
     if ("Ok" in result) {
-      toastsStore.show({
+      showToast({
         text: "Order status updated successfully",
         level: "success",
       });
       return true;
     } else {
-      console.error("Failed to update order status:", result.Err);
-      toastsStore.show({
+      showToast({
         text: `Failed to update order status: ${JSON.stringify(result.Err)}`,
         level: "error",
       });
       return false;
     }
   } catch (error) {
-    console.error("Error updating order status:", error);
-    toastsStore.show({
+    showToast({
       text: "Failed to update order status",
       level: "error",
     });
@@ -444,16 +444,17 @@ export async function updateOrderStatusAdmin(orderId: bigint, newStatus: OrderSt
   }
 }
 
-export async function cancelMyOrder(orderId: bigint, phoneNumber: string): Promise<Order | null> {
+export async function cancelMyOrder(orderId: bigint, phoneNumber: string): Promise<FrontendOrder | null> {
   try {
-    const result = await backendActor.cancel_my_order(orderId, phoneNumber);
+    const actor = await backendActorPromise;
+    const result = await actor.cancel_my_order(orderId, phoneNumber);
     if ("Ok" in result) {
-      toastsStore.show({
+      showToast({
         text: "Order cancelled successfully!",
         level: "success",
       });
       // Convert backend order to frontend order
-      const backendOrder = result.Ok;
+      const backendOrder: any = result.Ok;
       return {
         id: Number(backendOrder.id),
         status: backendOrder.status, // Assuming OrderStatus is compatible
@@ -462,14 +463,13 @@ export async function cancelMyOrder(orderId: bigint, phoneNumber: string): Promi
         user_phone_number: backendOrder.user_phone_number,
         delivery_address: backendOrder.delivery_address,
         timestamp: Number(backendOrder.timestamp),
-        items: backendOrder.items.map(item => ({
+        items: backendOrder.items.map((item: any) => ({
           product_id: Number(item.product_id),
           quantity: Number(item.quantity),
           price_per_unit_at_order: Number(item.price_per_unit_at_order)
         }))
       };
     } else {
-      console.error("Failed to cancel order:", result.Err);
       let errorMessage = "Failed to cancel order.";
       if (result.Err && 'CannotCancelOrder' in result.Err) {
         errorMessage = result.Err.CannotCancelOrder;
@@ -484,15 +484,14 @@ export async function cancelMyOrder(orderId: bigint, phoneNumber: string): Promi
       } else if (result.Err && 'StorageError' in result.Err) {
         errorMessage = `Storage error: ${result.Err.StorageError}`;
       }
-      toastsStore.show({
+      showToast({
         text: errorMessage,
         level: "error",
       });
       return null;
     }
   } catch (error) {
-    console.error("Error cancelling order:", error);
-    toastsStore.show({
+    showToast({
       text: "An unexpected error occurred while cancelling the order.",
       level: "error",
     });

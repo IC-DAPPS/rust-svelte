@@ -8,7 +8,6 @@
     getProducts,
   } from "$lib/api";
   import type { Order, OrderItemInput, Product } from "$lib/types";
-  import { toastsStore } from "@dfinity/gix-components";
 
   let order: Order | null = null;
   let allProducts: Product[] = [];
@@ -120,40 +119,25 @@
       );
 
       if (newOrderId) {
-        toastsStore.show({
-          text: "Order repeated successfully!",
-          level: "success",
-        });
+        console.log("Order repeated successfully!");
 
         window.location.href = "/orders";
       } else {
-        toastsStore.show({
-          text: "Failed to repeat order",
-          level: "error",
-        });
+        console.log("Failed to repeat order");
       }
     } catch (error) {
       console.error("Error repeating order:", error);
-      toastsStore.show({
-        text: "Failed to repeat order",
-        level: "error",
-      });
+      console.log("Failed to repeat order");
     }
   }
 
   async function handleCancelOrder() {
     if (!order || !order.id) {
-      toastsStore.show({
-        text: "Order details are not available to cancel.",
-        level: "error",
-      });
+      console.log("Order details are not available to cancel.");
       return;
     }
     if (!phoneNumber) {
-      toastsStore.show({
-        text: "Phone number is not available. Please log in again.",
-        level: "error",
-      });
+      console.log("Phone number is not available. Please log in again.");
       return;
     }
 
@@ -164,10 +148,9 @@
       }
     } catch (err) {
       console.error("Error in handleCancelOrder (details page):", err);
-      toastsStore.show({
-        text: "An unexpected error occurred while trying to cancel the order.",
-        level: "error",
-      });
+      console.log(
+        "An unexpected error occurred while trying to cancel the order."
+      );
     }
   }
 </script>

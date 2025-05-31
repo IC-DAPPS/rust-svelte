@@ -36,9 +36,9 @@
     "vitest": "^2.0.5"
   },
   "dependencies": {
-    "@dfinity/agent": "^1.4.0",
-    "@dfinity/gix-components": "^4.5.0",
-    "@dfinity/utils": "^2.4.0",
+    "@dfinity/agent": "2.4.1",
+    "@dfinity/auth-client": "^2.4.1",
+    "@dfinity/utils": "2.13.0",
     "playwright": "^1.52.0"
   }
 }

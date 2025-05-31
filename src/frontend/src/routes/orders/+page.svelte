@@ -3,7 +3,6 @@
   import { getMyOrders, createOrder, cancelMyOrder } from "$lib/api";
   import type { Order, OrderItemInput } from "$lib/types";
   import { goto } from "$app/navigation";
-  import { toastsStore } from "@dfinity/gix-components";
   import { cartStore } from "$lib/stores/cart";
 
   let orders: Order[] = [];
@@ -125,52 +124,35 @@
       );
 
       if (newOrderId) {
-        toastsStore.show({
-          text: "Order repeated successfully!",
-          level: "success",
-        });
-
+        console.log("[Toast Success] Order repeated successfully!");
         // Reload orders to show the new order
         loadOrders();
       } else {
-        toastsStore.show({
-          text: "Failed to repeat order",
-          level: "error",
-        });
+        console.error("[Toast Error] Failed to repeat order");
       }
     } catch (error) {
       console.error("Error repeating order:", error);
-      toastsStore.show({
-        text: "Failed to repeat order",
-        level: "error",
-      });
+      console.error("[Toast Error] Failed to repeat order");
     }
   }
 
   async function handleCancelOrder(orderId: bigint) {
     if (!phoneNumber) {
-      toastsStore.show({
-        text: "Phone number is not available. Please log in again.",
-        level: "error",
-      });
+      console.error(
+        "[Toast Error] Phone number is not available. Please log in again."
+      );
       return;
     }
     try {
       const updatedOrder = await cancelMyOrder(orderId, phoneNumber);
       if (updatedOrder) {
-        // Optionally, update the specific order in the list or reload all orders
-        // For simplicity, reloading all orders:
         loadOrders();
       }
-      // If updatedOrder is null, the cancelMyOrder function already showed a toast
     } catch (err) {
-      // This catch is mostly for unexpected errors in the component itself,
-      // as cancelMyOrder handles its own errors including API errors.
       console.error("Error in handleCancelOrder:", err);
-      toastsStore.show({
-        text: "An unexpected error occurred while trying to cancel the order.",
-        level: "error",
-      });
+      console.error(
+        "[Toast Error] An unexpected error occurred while trying to cancel the order."
+      );
     }
   }
 </script>

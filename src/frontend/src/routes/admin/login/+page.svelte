@@ -1,56 +1,98 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
+  import { authStore } from "$lib/stores/authStore";
+  import { getPrincipalFromIdentity } from "$lib/utils";
+  import { getAuthenticatedActor, getAnonymousActor } from "$lib/agent"; // For re-initializing actor
+  // import { actorStore } from "$lib/stores/actorStore"; // Example if you create an actorStore
 
-  let username = "";
-  let password = "";
-  let error = "";
-  let isLoading = false;
+  let localIsLoading = true;
 
-  // Hardcoded admin credentials for demo
-  // In a real app, use a proper authentication system
-  const ADMIN_USERNAME = "admin";
-  const ADMIN_PASSWORD = "dairy123";
-
-  onMount(() => {
-    // Check if already authenticated
-    const adminAuth = localStorage.getItem("adminAuth");
-    if (adminAuth === "true") {
+  // Subscribe to authStore
+  authStore.subscribe((value) => {
+    localIsLoading = value.isLoading;
+    if (!value.isLoading && value.isAuthenticated) {
+      // If initial check is done and user is authenticated by store, redirect
+      console.log("Login page: authStore says authenticated, redirecting...");
       goto("/admin/products");
     }
   });
 
-  function handleLogin() {
-    error = "";
-    isLoading = true;
-    console.log("Login attempt with:", { username });
+  onMount(() => {
+    // Initial check is now handled by authStore's initializeAuth()
+    // We just react to store changes.
+    // If after store initialization, we are still not authenticated and not loading, UI will show login button.
+    const unsubscribe = authStore.subscribe((value) => {
+      if (!value.isLoading && !value.isAuthenticated) {
+        console.log("Login page: authStore ready, user not authenticated.");
+      }
+    });
+    return unsubscribe; // Cleanup subscription
+  });
 
-    if (!username || !password) {
-      error = "Username and password required";
-      isLoading = false;
+  async function loginWithII() {
+    const currentAuthValue = $authStore; // Get current value for authClient
+    if (!currentAuthValue.authClient) {
+      console.error("AuthClient not available in store for login.");
       return;
     }
 
-    // Simple credential check - in real app, use proper authentication
-    setTimeout(() => {
-      try {
-        console.log("Checking credentials...");
-        if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-          console.log("Login successful, setting auth in localStorage");
-          localStorage.setItem("adminAuth", "true");
-          console.log("Redirecting to products page");
-          goto("/admin/products");
-        } else {
-          console.log("Invalid credentials");
-          error = "Invalid username or password";
-          isLoading = false;
-        }
-      } catch (err) {
-        console.error("Login error:", err);
-        error = "An error occurred during login";
-        isLoading = false;
-      }
-    }, 800); // Simulate network delay
+    await currentAuthValue.authClient.login({
+      identityProvider: "https://identity.ic0.app/#authorize",
+      onSuccess: async () => {
+        if (!currentAuthValue.authClient) return; // Should not happen if login was called
+        const identity = currentAuthValue.authClient.getIdentity();
+        const principal = getPrincipalFromIdentity(identity);
+
+        // Update the authStore with new authenticated state
+        authStore.set({
+          isAuthenticated: true,
+          identity: identity,
+          principal: principal,
+          authClient: currentAuthValue.authClient, // Keep the same client
+          isLoading: false,
+        });
+
+        // Re-initialize actor for authenticated calls
+        // This part depends on how you manage your actor for API calls
+        // Option 1: Update a global actor (if $lib/agent exports a mutable actor or uses a store)
+        // await getAuthenticatedActor(identity); // This function from agent.ts returns an actor
+        // You might need to set it to a global variable or another store, e.g., actorStore.set(await getAuthenticatedActor(identity))
+        console.log("Logged in with II, principal:", principal);
+
+        goto("/admin/products");
+      },
+      onError: (error) => {
+        console.error("II Login Error:", error);
+        // Optionally update authStore to reflect login failure or show error to user
+        authStore.update((s) => ({ ...s, isLoading: false }));
+      },
+    });
+  }
+
+  async function logout() {
+    const currentAuthValue = $authStore;
+    if (!currentAuthValue.authClient) return;
+
+    await currentAuthValue.authClient.logout();
+
+    // Reset authStore to initial (logged out) state
+    authStore.set({
+      isAuthenticated: false,
+      identity: null,
+      principal: "",
+      authClient: currentAuthValue.authClient, // Keep client for next login
+      isLoading: false,
+    });
+
+    // Re-initialize actor for anonymous calls
+    // await getAnonymousActor(); // Similar to login, manage your actor instance
+    // e.g., actorStore.set(await getAnonymousActor());
+    console.log("Logged out from II");
+
+    // No need to goto /admin/login, as the page will react to store change and show login button
+    // However, if you want to ensure a clean state or were on a different page, uncomment:
+    // goto("/admin/login");
   }
 </script>
 
@@ -58,71 +100,47 @@
   <title>Admin Login - Kanhaiya Dairy</title>
 </svelte:head>
 
-<div class="login-page">
-  <div class="login-container">
-    <div class="login-header">
-      <h1>Admin Login</h1>
-      <p>Kanhaiya Dairy Administration</p>
-    </div>
-
-    <form on:submit|preventDefault={handleLogin} class="login-form">
-      {#if error}
-        <div class="error-message">{error}</div>
-      {/if}
-
-      <div class="form-group">
-        <label for="username">Username</label>
-        <input
-          type="text"
-          id="username"
-          bind:value={username}
-          placeholder="Enter admin username"
-          disabled={isLoading}
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input
-          type="password"
-          id="password"
-          bind:value={password}
-          placeholder="Enter admin password"
-          disabled={isLoading}
-        />
-      </div>
-
-      <p class="info-text">
-        Use username: <strong>admin</strong> and password:
-        <strong>dairy123</strong>
-      </p>
-
-      <button
-        type="submit"
-        class="login-btn"
-        disabled={isLoading}
-        on:click|preventDefault={() => {
-          if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-            localStorage.setItem("adminAuth", "true");
-            window.location.href = "/admin/products";
-          } else {
-            error = "Invalid username or password";
-          }
-        }}
-      >
-        {#if isLoading}
-          <span class="spinner-small"></span> Logging in...
-        {:else}
-          Login
-        {/if}
-      </button>
-    </form>
-
-    <div class="back-link">
-      <a href="/">Back to Store</a>
+<!-- UI part reacts to $authStore.isAuthenticated and $authStore.isLoading -->
+{#if $authStore.isLoading}
+  <div class="login-page">
+    <div class="login-container">
+      <div class="spinner"></div>
+      <p>Checking authentication...</p>
     </div>
   </div>
-</div>
+{:else if $authStore.isAuthenticated}
+  <!-- This part should ideally not be reached if redirection works, -->
+  <!-- but as a fallback or if on this page directly while authenticated -->
+  <div class="login-page">
+    <div class="login-container">
+      <div class="login-header">
+        <h1>Admin Login</h1>
+        <p>Kanhaiya Dairy Administration</p>
+      </div>
+      <div class="info-text">
+        <p>Logged in as: <strong>{$authStore.principal}</strong></p>
+        <button class="login-btn" on:click={logout}>Logout from II</button>
+        <p><a href="/admin/products">Go to Admin Dashboard</a></p>
+      </div>
+    </div>
+  </div>
+{:else}
+  <!-- Not loading and not authenticated: Show Login Button -->
+  <div class="login-page">
+    <div class="login-container">
+      <div class="login-header">
+        <h1>Admin Login</h1>
+        <p>Kanhaiya Dairy Administration</p>
+      </div>
+      <button class="login-btn" on:click={loginWithII}>
+        Login with Internet Identity
+      </button>
+      <div class="back-link">
+        <a href="/">Back to Store</a>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <style>
   .login-page {
@@ -132,7 +150,6 @@
     min-height: 100vh;
     background-color: #f5f5f5;
   }
-
   .login-container {
     width: 100%;
     max-width: 400px;
@@ -140,46 +157,19 @@
     padding: 2rem;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    text-align: center;
   }
-
   .login-header {
     text-align: center;
     margin-bottom: 2rem;
   }
-
   .login-header h1 {
     color: #5eaa6f;
     margin-bottom: 0.5rem;
   }
-
   .login-header p {
     color: #666;
   }
-
-  .login-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.2rem;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-  }
-
-  .form-group label {
-    color: #555;
-    font-size: 0.9rem;
-  }
-
-  .form-group input {
-    padding: 0.8rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
-  }
-
   .login-btn {
     padding: 0.8rem;
     background-color: #5eaa6f;
@@ -190,64 +180,57 @@
     cursor: pointer;
     transition: background-color 0.2s;
     margin-top: 1rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: inline-block;
+    width: auto;
+    min-width: 200px;
   }
-
   .login-btn:hover {
     background-color: #4c9a5e;
   }
-
   .login-btn:disabled {
     background-color: #a3c7ad;
     cursor: not-allowed;
   }
-
-  .error-message {
-    padding: 0.8rem;
-    background-color: #ffebee;
-    border: 1px solid #ffcdd2;
-    color: #c62828;
-    border-radius: 4px;
+  .info-text {
     font-size: 0.9rem;
-    margin-bottom: 0.5rem;
+    color: #666;
+    background-color: #f0f0f0;
+    padding: 1rem;
+    border-radius: 4px;
+    text-align: center;
+    margin-bottom: 1rem;
   }
-
+  .info-text p {
+    margin: 0.5rem 0;
+  }
+  .info-text strong {
+    color: #333;
+  }
+  .info-text a {
+    color: #5eaa6f;
+    text-decoration: underline;
+  }
   .back-link {
     text-align: center;
     margin-top: 2rem;
     font-size: 0.9rem;
   }
-
   .back-link a {
     color: #5eaa6f;
     text-decoration: none;
   }
-
-  .spinner-small {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+  .spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-left-color: #5eaa6f;
     border-radius: 50%;
-    border-top-color: #fff;
-    animation: spin 1s ease infinite;
-    margin-right: 0.5rem;
+    width: 36px;
+    height: 36px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
   }
-
   @keyframes spin {
     to {
       transform: rotate(360deg);
     }
-  }
-
-  .info-text {
-    font-size: 0.9rem;
-    color: #666;
-    background-color: #f5f5f5;
-    padding: 0.5rem;
-    border-radius: 4px;
-    text-align: center;
   }
 </style>

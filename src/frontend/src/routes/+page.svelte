@@ -4,7 +4,6 @@
   import type { Product } from "$lib/types";
   import ProductCard from "$lib/components/ProductCard.svelte";
   import { cartStore } from "$lib/stores/cart";
-  import { toastsStore } from "@dfinity/gix-components";
   import { isEnglish } from "$lib/stores/languageStore";
 
   let products: Product[] = [];
