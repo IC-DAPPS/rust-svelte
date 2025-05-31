@@ -37,8 +37,12 @@
       return;
     }
 
+    // 1 day in nanoseconds (24 hours * 60 minutes * 60 seconds * 1,000,000,000 nanoseconds)
+    const oneDayInNanoseconds = BigInt(24 * 60 * 60 * 1_000_000_000);
+
     await currentAuthValue.authClient.login({
       identityProvider: "https://identity.ic0.app/#authorize",
+      maxTimeToLive: oneDayInNanoseconds, // Set session to 1 day
       onSuccess: async () => {
         if (!currentAuthValue.authClient) return; // Should not happen if login was called
         const identity = currentAuthValue.authClient.getIdentity();
