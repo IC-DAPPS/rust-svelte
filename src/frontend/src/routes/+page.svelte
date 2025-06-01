@@ -24,11 +24,22 @@
   function addToCart(product: Product, quantity: number) {
     cartStore.addItem(product, quantity);
   }
+
+  // Reactive statement for delivery message based on language
+  $: deliveryMessage = $isEnglish
+    ? "🚚 Heads up! We currently deliver only within a 3km radius of Kanhaiya Dairy in the Suhagi area. 🚚"
+    : "🚚 ध्यान दें! हम वर्तमान में केवल सुहागी क्षेत्र में कन्हैया डेयरी के 3 किमी के दायरे में ही डिलीवरी करते हैं। 🚚";
 </script>
 
 <svelte:head>
   <title>Kanhaiya Dairy - Fresh Dairy Products</title>
 </svelte:head>
+
+<div class="delivery-info-banner">
+  <p>
+    {deliveryMessage}
+  </p>
+</div>
 
 <div class="homepage">
   <section class="hero">
@@ -242,5 +253,20 @@
     .features {
       flex-direction: column;
     }
+  }
+
+  .delivery-info-banner {
+    background-color: #fff3cd; /* A light yellow, common for info messages */
+    color: #856404; /* Darker text for contrast */
+    padding: 1rem;
+    text-align: center;
+    border: 1px solid #ffeeba;
+    border-radius: 0.25rem;
+    margin-bottom: 1.5rem; /* Add some space below the banner */
+    font-size: 0.95rem;
+  }
+
+  .delivery-info-banner p {
+    margin: 0;
   }
 </style>
