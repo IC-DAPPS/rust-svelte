@@ -1,16 +1,24 @@
 use candid::Principal;
 use std::{cell::RefCell, collections::BTreeSet};
 
-const INITIAL_AUTHORIZED_PRINCIPAL: &str =
-    "3x4lf-ejzal-hbmpw-3nbss-3eewi-bhvbf-wtvor-d5ogi-hop22-w7o5t-lqe";
+const INITIAL_AUTHORIZED_PRINCIPALS: [&str; 2] = [
+    "3x4lf-ejzal-hbmpw-3nbss-3eewi-bhvbf-wtvor-d5ogi-hop22-w7o5t-lqe",
+    "upfji-4rkdd-uh3e4-uiavy-wkdcq-rcakh-creh5-crsgi-hq5az-7nfqd-wqe",
+];
 
 thread_local! {
     pub static GUARD: RefCell<BTreeSet<Principal>> = RefCell::new({
         let mut set = BTreeSet::new();
-        let initial_principal = Principal::from_text(INITIAL_AUTHORIZED_PRINCIPAL)
-        .expect("Invalid initial principal");
-
-        set.insert(initial_principal);
+        for principal_str in INITIAL_AUTHORIZED_PRINCIPALS.iter() {
+            match Principal::from_text(principal_str) {
+                Ok(principal) => {
+                    set.insert(principal);
+                }
+                Err(e) => {
+                    eprintln!("Failed to parse principal string '{}': {}", principal_str, e);
+                }
+            }
+        }
         set
     });
 }
@@ -47,7 +55,7 @@ pub fn is_dev() -> Result<(), String> {
     if caller == anonymous {
         return Err("AnonymousCaller".to_string());
     }
-    
+
     GUARD.with(|guard| {
         let guard_ref = guard.borrow();
         if !guard_ref.contains(&caller) {
