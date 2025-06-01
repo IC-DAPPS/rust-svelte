@@ -52,7 +52,11 @@
         {/if}
       </div>
       <div class="about-image">
-        <div class="placeholder-image">{$isEnglish ? "Image" : "छवि"}</div>
+        <img
+          src="/images/shop/shop.jpg"
+          alt={$isEnglish ? "Kanhaiya Dairy Shop" : "कन्हैया डेयरी की दुकान"}
+          class="responsive-image"
+        />
       </div>
     </section>
 
@@ -112,9 +116,13 @@
       <div class="team-members">
         <div class="team-member">
           <div class="member-photo">
-            <div class="placeholder-image">
-              {$isEnglish ? "Photo" : "तस्वीर"}
-            </div>
+            <img
+              src="/images/shop/badda.jpg"
+              alt={$isEnglish
+                ? "Patel Sir - Founder & CEO"
+                : "पटेल सर - संस्थापक और सीईओ"}
+              class="profile-image"
+            />
           </div>
           <h3>{$isEnglish ? "Patel Sir" : "पटेल सर"}</h3>
           <p class="member-title">
@@ -519,5 +527,21 @@
     .placeholder-map {
       height: 250px;
     }
+  }
+
+  .responsive-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    display: block;
+  }
+
+  .profile-image {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    margin: 0 auto;
   }
 </style>
