@@ -555,13 +555,16 @@
   .items-table {
     width: 100%;
     border-collapse: collapse;
+    display: block;
+    overflow-x: auto;
   }
 
   .items-table th,
   .items-table td {
     text-align: left;
-    padding: 0.75rem;
+    padding: 0.5rem 0.75rem;
     border-bottom: 1px solid #eee;
+    white-space: nowrap;
   }
 
   .items-table th {
@@ -741,7 +744,8 @@
     }
     .items-table th,
     .items-table td {
-      padding: 0.5rem 0.75rem;
+      padding: 0.4rem 0.35rem;
+      font-size: 0.85rem;
       white-space: nowrap;
     }
 

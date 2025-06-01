@@ -4,6 +4,11 @@
   import { page } from "$app/stores"; // Import page store
 </script>
 
+<svelte:head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Aap yahan aur bhi meta tags (jaise description, keywords) add kar sakte hain -->
+</svelte:head>
+
 <div class="app">
   {#if !$page.url.pathname.startsWith("/admin")}
     <Navbar />
