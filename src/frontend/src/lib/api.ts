@@ -1,5 +1,7 @@
-import { backendActorPromise } from "./agent";
+import { backendActorPromise, getAuthenticatedActor } from "./agent";
 import type { Product as FrontendProduct, UserProfile, Order as FrontendOrder, OrderItemInput, OrderStatus } from "./types";
+import { authStore } from "./stores/authStore";
+import { get } from "svelte/store";
 
 // Simple custom toast function
 function showToast({ text, level }: { text: string, level: string }) {
@@ -77,7 +79,17 @@ export async function addProduct(product: Omit<FrontendProduct, 'id'>): Promise<
 // Admin functions for customers
 export async function getAllCustomers(): Promise<UserProfile[]> {
   try {
-    const actor = await backendActorPromise;
+    const currentAuth = get(authStore);
+    let actor;
+    if (currentAuth.isAuthenticated && currentAuth.identity) {
+      actor = await getAuthenticatedActor(currentAuth.identity);
+    } else {
+      showToast({
+        text: "Admin authentication required for fetching customers.",
+        level: "error",
+      });
+      return [];
+    }
     const result = await actor.get_all_customers();
     return result.map((customer: any) => ({
       name: customer.name,
@@ -97,7 +109,17 @@ export async function getAllCustomers(): Promise<UserProfile[]> {
 // Admin functions for orders
 export async function getAllOrders(): Promise<FrontendOrder[]> {
   try {
-    const actor = await backendActorPromise;
+    const currentAuth = get(authStore);
+    let actor;
+    if (currentAuth.isAuthenticated && currentAuth.identity) {
+      actor = await getAuthenticatedActor(currentAuth.identity);
+    } else {
+      showToast({
+        text: "Admin authentication required for fetching orders.",
+        level: "error",
+      });
+      return [];
+    }
     const result = await actor.get_all_orders();
 
     if ("Ok" in result) {

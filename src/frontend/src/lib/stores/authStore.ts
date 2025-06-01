@@ -25,7 +25,12 @@ export async function initializeAuth() {
     if (typeof window === 'undefined') return; // Ensure runs only in browser
 
     try {
-        const client = await AuthClient.create();
+        const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
+        const client = await AuthClient.create({
+            idleOptions: {
+                idleTimeout: oneDayInMilliseconds,
+            }
+        });
         const authenticated = await client.isAuthenticated();
         let currentIdentity: Identity | null = null;
         let currentPrincipal = '';

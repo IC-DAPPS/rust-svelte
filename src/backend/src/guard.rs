@@ -2,7 +2,7 @@ use candid::Principal;
 use std::{cell::RefCell, collections::BTreeSet};
 
 const INITIAL_AUTHORIZED_PRINCIPAL: &str =
-    "2bfxp-uzezm-gf5ny-ztks2-ybgzc-4dfjc-7gdhs-he2ek-vdjfk-w4yph-fqe";
+    "3x4lf-ejzal-hbmpw-3nbss-3eewi-bhvbf-wtvor-d5ogi-hop22-w7o5t-lqe";
 
 thread_local! {
     pub static GUARD: RefCell<BTreeSet<Principal>> = RefCell::new({

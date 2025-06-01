@@ -239,7 +239,7 @@ fn add_product_admin(payload: AddProductPayload) -> Result<u64, String> {
     store::add_product(product_to_add)
 }
 
-#[update]
+#[update(guard = "is_dev")]
 fn update_product_admin(id: u64, payload: AddProductPayload) -> Result<Product, String> {
     let product_update = Product {
         id, // Keep the original ID
@@ -253,12 +253,12 @@ fn update_product_admin(id: u64, payload: AddProductPayload) -> Result<Product, 
 
 // Admin User Management
 
-#[query]
+#[query(guard = "is_dev")]
 fn get_all_customers() -> Vec<UserProfile> {
     store::get_all_user_profiles()
 }
 
-#[update]
+#[update(guard = "is_dev")]
 fn delete_profile_admin(phone_number: String) -> Result<UserProfile, String> {
     if phone_number.trim().is_empty() {
         return Err("Phone number cannot be empty.".to_string());
@@ -274,12 +274,12 @@ fn delete_profile_admin(phone_number: String) -> Result<UserProfile, String> {
 
 // Admin Order Management
 
-#[query]
+#[query(guard = "is_dev")]
 fn get_all_orders() -> Result<Vec<Order>, OrderError> {
     Ok(store::get_all_orders())
 }
 
-#[query]
+#[query(guard = "is_dev")]
 fn get_order_details_admin(order_id: u64) -> Result<Order, OrderError> {
     match store::get_order(order_id) {
         Some(order) => Ok(order),
@@ -287,7 +287,7 @@ fn get_order_details_admin(order_id: u64) -> Result<Order, OrderError> {
     }
 }
 
-#[update]
+#[update(guard = "is_dev")]
 fn update_order_status_admin(order_id: u64, new_status: OrderStatus) -> Result<Order, OrderError> {
     let timestamp = time();
     match store::update_order_status(order_id, new_status, timestamp) {
@@ -304,7 +304,7 @@ fn update_order_status_admin(order_id: u64, new_status: OrderStatus) -> Result<O
 
 // Admin System Functions
 
-#[update]
+#[update(guard = "is_dev")]
 fn initialize_products() -> Result<String, String> {
     if store::is_initialized() {
         return Err("Already initialized".to_string());
