@@ -311,4 +311,85 @@
   .items-table-admin th {
     vertical-align: middle;
   }
+
+  .error-container,
+  .empty-state {
+    padding: 2rem;
+    text-align: center;
+    background-color: #fff3f3;
+    border: 1px solid #ffcccc;
+    border-radius: 6px;
+    margin: 2rem auto;
+    max-width: 500px;
+  }
+  .error-container p,
+  .empty-state p {
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    color: #721c24; /* Dark red for error text */
+  }
+  .error-container .back-link,
+  .empty-state .back-link {
+    display: inline-block;
+    padding: 0.6rem 1.2rem;
+    background-color: #5eaa6f;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  .error-container .back-link:hover,
+  .empty-state .back-link:hover {
+    background-color: #4e9a5f;
+  }
+
+  @media (max-width: 768px) {
+    .admin-page {
+      /* padding: 0.5rem; */ /* General padding for admin pages */
+    }
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    .page-header h1 {
+      font-size: 1.5rem;
+    }
+    .back-link.button-link {
+      /* For the main back button when order IS found */
+      width: 100%;
+      text-align: center;
+    }
+    .details-grid {
+      grid-template-columns: 1fr; /* Stack sections on mobile */
+    }
+    .items-table-container {
+      /* Wrap the items table */
+      display: block;
+      overflow-x: auto;
+      width: 100%;
+      -webkit-overflow-scrolling: touch;
+    }
+    .items-table th,
+    .items-table td {
+      font-size: 0.75rem;
+      padding: 0.4rem 0.35rem;
+      white-space: nowrap;
+    }
+    .error-container,
+    .empty-state {
+      padding: 1.5rem;
+      margin: 1rem;
+    }
+    .error-container p,
+    .empty-state p {
+      font-size: 1rem;
+    }
+    .error-container .back-link,
+    .empty-state .back-link {
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      width: 100%; /* Make button full width */
+    }
+  }
 </style>

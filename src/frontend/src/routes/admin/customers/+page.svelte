@@ -129,15 +129,17 @@
           <tbody>
             {#each filteredCustomers as customer (customer.phone_number)}
               <tr>
-                <td>{customer.phone_number}</td>
-                <td>{customer.name}</td>
-                <td class="address-cell">{customer.address}</td>
-                <td
+                <td data-label="Phone Number">{customer.phone_number}</td>
+                <td data-label="Name">{customer.name}</td>
+                <td data-label="Address" class="address-cell"
+                  >{customer.address}</td
+                >
+                <td data-label="Customer Since"
                   >{customer.created_at
                     ? formatDate(customer.created_at)
                     : "N/A"}</td
                 >
-                <td class="profile-action-cell">
+                <td data-label="Actions" class="profile-action-cell">
                   <button
                     class="action-btn view-orders-btn"
                     style="background-color: #0d6efd; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;"
@@ -299,7 +301,7 @@
     .page-header {
       flex-direction: column;
       align-items: flex-start;
-      gap: 1rem;
+      gap: 0.5rem;
     }
 
     .refresh-btn {
@@ -313,6 +315,63 @@
 
     .customers-section {
       padding: 1rem;
+    }
+
+    .search-input {
+      font-size: 0.9rem;
+    }
+
+    .customers-table-container {
+      overflow-x: initial;
+    }
+
+    .customers-table {
+      width: 100%;
+      min-width: 0;
+      border: none;
+    }
+
+    .customers-table thead {
+      display: none;
+    }
+
+    .customers-table tr {
+      display: block;
+      margin-bottom: 1rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 0.75rem;
+      background-color: #f9f9f9;
+    }
+
+    .customers-table td {
+      display: block;
+      text-align: right;
+      font-size: 0.9rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px dotted #eee;
+      white-space: normal;
+    }
+
+    .customers-table td:last-child {
+      border-bottom: none;
+    }
+
+    .customers-table td::before {
+      content: attr(data-label);
+      float: left;
+      font-weight: bold;
+      margin-right: 0.5rem;
+      color: #333;
+    }
+
+    .customers-table td[data-label="Actions"] {
+      text-align: center;
+      padding-top: 0.75rem;
+    }
+    .customers-table .profile-action-cell button {
+      width: auto;
+      display: inline-block;
     }
   }
 </style>

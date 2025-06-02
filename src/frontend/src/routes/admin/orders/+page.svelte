@@ -307,13 +307,13 @@
           <tbody>
             {#each currentDayOrders as order (order.id)}
               <tr>
-                <td>{order.id}</td>
-                <td>
+                <td data-label="Order ID">{order.id}</td>
+                <td data-label="Customer / Phone">
                   {order.customer_name || "N/A"}
                   <br />
                   <small>{order.user_phone_number}</small>
                 </td>
-                <td>
+                <td data-label="Items">
                   <div class="order-items">
                     {#if order.items && order.items.length > 0}
                       {#each order.items as item, i}
@@ -334,9 +334,11 @@
                     {/if}
                   </div>
                 </td>
-                <td class="amount-cell">₹{order.total_amount}</td>
-                <td>{formatDate(order.timestamp)}</td>
-                <td>
+                <td data-label="Amount" class="amount-cell"
+                  >₹{order.total_amount}</td
+                >
+                <td data-label="Date">{formatDate(order.timestamp)}</td>
+                <td data-label="Status">
                   <select
                     class="status-select status-{getStatusDisplayName(
                       order.status
@@ -367,8 +369,10 @@
                     >
                   {/if}
                 </td>
-                <td class="address-cell">{order.delivery_address}</td>
-                <td class="actions-cell">
+                <td data-label="Address" class="address-cell"
+                  >{order.delivery_address}</td
+                >
+                <td data-label="Details" class="actions-cell">
                   <button
                     class="action-btn view-btn"
                     on:click={() => goto(`/admin/orders/${order.id}`)}
@@ -459,10 +463,11 @@
 
   .orders-table th,
   .orders-table td {
-    padding: 0.8rem;
+    padding: 0.8rem 1rem;
     text-align: left;
     border-bottom: 1px solid #eee;
     vertical-align: middle;
+    font-size: 0.9rem;
   }
 
   .orders-table th {
@@ -594,29 +599,83 @@
     .page-header {
       flex-direction: column;
       align-items: flex-start;
-      gap: 1rem;
     }
-
-    .refresh-btn {
+    .page-header h1 {
+      margin-bottom: 0.5rem;
+    }
+    .search-filter input {
       width: 100%;
-      justify-content: center;
     }
-
-    .section-header {
+    .pagination-controls {
       flex-direction: column;
-      align-items: flex-start;
+      gap: 0.5rem;
+      align-items: stretch;
     }
-
-    .search-filter {
+    .pagination-controls button {
+      width: 100%;
+      padding: 0.6rem;
+    }
+    .orders-table-container {
+      overflow-x: initial;
       width: 100%;
     }
-
-    .admin-page {
-      padding: 0.5rem;
+    .orders-table {
+      width: 100%;
+      min-width: 0;
+      border: none;
     }
-
-    .orders-section {
+    .orders-table thead {
+      display: none;
+    }
+    .orders-table tr {
+      display: block;
+      margin-bottom: 1rem;
+      border: 1px solid #ddd;
+      border-radius: 6px;
       padding: 1rem;
+      background-color: #f9f9f9;
+    }
+    .orders-table td {
+      display: block;
+      text-align: right;
+      font-size: 0.9rem;
+      padding: 0.6rem 0.2rem;
+      border-bottom: 1px dotted #eee;
+      white-space: normal;
+    }
+    .orders-table td:last-child {
+      border-bottom: none;
+    }
+    .orders-table td::before {
+      content: attr(data-label);
+      float: left;
+      font-weight: bold;
+      margin-right: 0.5rem;
+      color: #333;
+      white-space: nowrap;
+    }
+    .orders-table .order-items {
+      font-size: 0.85rem;
+      max-width: none;
+    }
+    .orders-table .order-items .order-item {
+    }
+    .orders-table .status-select {
+      width: 100%;
+      margin-top: 0.25rem;
+    }
+    .orders-table .actions-cell {
+      text-align: center;
+      padding-top: 0.75rem;
+    }
+    .orders-table .actions-cell .action-btn {
+      width: auto;
+      display: inline-block;
+      padding: 0.5rem 1rem;
+    }
+    .orders-table td[data-label="Customer / Phone"] small {
+      display: block;
+      margin-top: 0.2rem;
     }
   }
 

@@ -366,27 +366,30 @@
           <tbody>
             {#each products as product (product.id)}
               <tr>
-                <td>{product.id}</td>
-                <td>
+                <td data-label="ID">{product.id}</td>
+                <td data-label="Image">
                   {#if product.imageUrl}
                     <img
                       src={product.imageUrl}
                       alt={product.name}
-                      class="product-thumbnail"
+                      class="product-image-thumbnail"
                     />
                   {:else}
-                    <span class="no-image">No Image</span>
+                    No Image
                   {/if}
                 </td>
-                <td>{product.name}</td>
-                <td>{product.description}</td>
-                <td>₹{product.price}</td>
-                <td>{product.unit}</td>
-                <td class="actions-cell">
+                <td data-label="Name">{product.name}</td>
+                <td data-label="Description" class="description-cell"
+                  >{product.description}</td
+                >
+                <td data-label="Price">₹{product.price.toFixed(2)}</td>
+                <td data-label="Unit">{product.unit}</td>
+                <td data-label="Actions" class="actions-cell">
                   <button
                     class="action-btn edit-btn"
                     on:click={() => openEditForm(product)}>Edit</button
                   >
+                  <!-- Delete button can be added here if needed -->
                 </td>
               </tr>
             {/each}
@@ -554,23 +557,15 @@
     font-weight: 600;
   }
 
-  .product-thumbnail {
-    width: 60px;
-    height: 60px;
-    object-fit: cover;
+  .product-image-thumbnail {
+    max-width: 60px;
+    height: auto;
     border-radius: 4px;
     border: 1px solid #eee;
   }
-  .no-image {
-    font-size: 0.8rem;
-    color: #999;
-    display: inline-block;
-    width: 60px;
-    height: 60px;
-    line-height: 60px;
-    text-align: center;
-    background-color: #f5f5f5;
-    border-radius: 4px;
+
+  .description-cell {
+    white-space: normal;
   }
 
   .actions-cell {
@@ -667,6 +662,71 @@
 
     .add-btn {
       width: 100%;
+    }
+
+    .products-table-container {
+      overflow-x: initial;
+    }
+
+    .products-table {
+      width: 100%;
+      min-width: 0;
+      border: none;
+    }
+
+    .products-table thead {
+      display: none;
+    }
+
+    .products-table tr {
+      display: block;
+      margin-bottom: 1rem;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 1rem;
+      background-color: #f9f9f9;
+    }
+
+    .products-table td {
+      display: block;
+      text-align: right;
+      font-size: 0.9rem;
+      padding: 0.6rem 0.2rem;
+      border-bottom: 1px dotted #eee;
+      white-space: normal;
+    }
+
+    .products-table td:last-child {
+      border-bottom: none;
+    }
+
+    .products-table td::before {
+      content: attr(data-label);
+      float: left;
+      font-weight: bold;
+      margin-right: 0.5rem;
+      color: #333;
+      white-space: nowrap;
+    }
+
+    .products-table .description-cell {
+      /* Custom styles for description if needed in stacked view */
+    }
+
+    .product-image-thumbnail {
+      max-width: 50px;
+      margin-top: 0.25rem;
+    }
+
+    .products-table .actions-cell {
+      text-align: center;
+      padding-top: 0.75rem;
+    }
+    .products-table .actions-cell .action-btn {
+      width: auto;
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      margin: 0.25rem;
     }
   }
 
