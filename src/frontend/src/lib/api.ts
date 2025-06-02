@@ -44,7 +44,18 @@ export async function getProducts(): Promise<FrontendProduct[]> {
 // Admin API functions for products
 export async function addProduct(product: Omit<FrontendProduct, 'id'>): Promise<FrontendProduct | null> {
   try {
-    const actor = await backendActorPromise;
+    const currentAuth = get(authStore);
+    let actor;
+    if (currentAuth.isAuthenticated && currentAuth.identity) {
+      actor = await getAuthenticatedActor(currentAuth.identity);
+    } else {
+      showToast({
+        text: "Admin authentication required to add product.",
+        level: "error",
+      });
+      return null;
+    }
+
     const payload = {
       name: product.name,
       unit: product.unit,
@@ -367,7 +378,18 @@ export async function getOrderDetails(orderId: bigint, phoneNumber: string): Pro
 
 export async function updateProduct(product: FrontendProduct): Promise<FrontendProduct | null> {
   try {
-    const actor = await backendActorPromise;
+    const currentAuth = get(authStore);
+    let actor;
+    if (currentAuth.isAuthenticated && currentAuth.identity) {
+      actor = await getAuthenticatedActor(currentAuth.identity);
+    } else {
+      showToast({
+        text: "Admin authentication required to update product.",
+        level: "error",
+      });
+      return null;
+    }
+
     const payload = {
       name: product.name,
       unit: product.unit,
@@ -405,7 +427,19 @@ export async function updateProduct(product: FrontendProduct): Promise<FrontendP
 
 export async function getOrderDetailsAdmin(orderId: bigint): Promise<FrontendOrder | null> {
   try {
-    const actor = await backendActorPromise;
+    const currentAuth = get(authStore);
+    let actor;
+
+    if (currentAuth.isAuthenticated && currentAuth.identity) {
+      actor = await getAuthenticatedActor(currentAuth.identity);
+    } else {
+      showToast({
+        text: "Admin authentication required to fetch order details.",
+        level: "error",
+      });
+      return null;
+    }
+
     const result = await actor.get_order_details_admin(orderId);
     if ("Ok" in result) {
       const order: any = result.Ok;
@@ -433,16 +467,28 @@ export async function getOrderDetailsAdmin(orderId: bigint): Promise<FrontendOrd
     }
   } catch (error) {
     showToast({
-      text: "Failed to fetch order details",
+      text: "Failed to fetch order details due to an unexpected error.",
       level: "error",
     });
+    console.error("Error in getOrderDetailsAdmin:", error);
     return null;
   }
 }
 
 export async function updateOrderStatusAdmin(orderId: bigint, newStatus: OrderStatus): Promise<boolean> {
   try {
-    const actor = await backendActorPromise;
+    const currentAuth = get(authStore);
+    let actor;
+    if (currentAuth.isAuthenticated && currentAuth.identity) {
+      actor = await getAuthenticatedActor(currentAuth.identity);
+    } else {
+      showToast({
+        text: "Admin authentication required to update order status.",
+        level: "error",
+      });
+      return false;
+    }
+
     const result = await actor.update_order_status_admin(orderId, newStatus);
     if ("Ok" in result) {
       showToast({

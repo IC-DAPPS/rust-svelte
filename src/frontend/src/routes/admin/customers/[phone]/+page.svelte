@@ -300,11 +300,14 @@
       margin-right: 0.5rem;
       color: #333;
       white-space: nowrap; /* Keep label on one line */
+      overflow: hidden; /* Added to help with float containment */
     }
     .orders-table td[data-label="Items"] ul {
-      padding-left: 0; /* Remove default ul padding if label is taking care of alignment */
+      padding-left: 1.2rem; /* Changed from 0 to provide space for bullets */
       margin-top: 0.25rem;
       text-align: left; /* Align list items to left if td is right-aligned */
+      display: flow-root; /* This was already present */
+      overflow: hidden; /* Added to help with float containment */
     }
     .orders-table td[data-label="Items"] li {
       font-size: 0.85rem;
