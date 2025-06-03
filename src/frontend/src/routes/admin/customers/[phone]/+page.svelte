@@ -284,7 +284,7 @@
     }
     .orders-table td {
       display: block; /* Stack cells vertically */
-      text-align: right; /* Align content to the right */
+      text-align: left; /* NEW: Align content to the left */
       font-size: 0.9rem; /* Adjust font size as needed */
       padding: 0.6rem 0.2rem; /* Vertical padding, some horizontal for alignment */
       border-bottom: 1px dotted #eee; /* Separator for stacked items */
@@ -295,17 +295,17 @@
     }
     .orders-table td::before {
       content: attr(data-label); /* Get label from data-label attribute */
-      float: left; /* Label on the left */
+      display: block; /* NEW: Make label a block element */
       font-weight: bold;
-      margin-right: 0.5rem;
+      margin-bottom: 0.25rem; /* NEW: Space below label */
       color: #333;
       white-space: nowrap; /* Keep label on one line */
       overflow: hidden; /* Added to help with float containment */
     }
     .orders-table td[data-label="Items"] ul {
-      padding-left: 1.2rem; /* Changed from 0 to provide space for bullets */
+      padding-left: 1.2rem; /* Keep padding for bullet points */
       margin-top: 0.25rem;
-      text-align: left; /* Align list items to left if td is right-aligned */
+      text-align: left; /* Align list items to left */
       display: flow-root; /* This was already present */
       overflow: hidden; /* Added to help with float containment */
     }

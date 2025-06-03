@@ -248,44 +248,25 @@
 
   .profile-btn {
     background-color: #007bff; /* Bootstrap primary color */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
-    cursor: pointer;
-  }
-  .profile-btn:hover {
-    background-color: #0056b3;
   }
 
+  /* Loading, Error, Empty States */
   .loading-container,
   .error-container,
   .empty-state {
-    padding: 3rem 1rem;
     text-align: center;
+    padding: 3rem 1rem;
     color: #666;
   }
 
   .spinner {
-    border: 4px solid rgba(0, 0, 0, 0.1);
-    width: 36px;
-    height: 36px;
+    border: 4px solid #f3f3f3; /* Light grey */
+    border-top: 4px solid #3498db; /* Blue */
     border-radius: 50%;
-    border-left-color: #5eaa6f;
+    width: 40px;
+    height: 40px;
     animation: spin 1s linear infinite;
     margin: 0 auto 1rem;
-  }
-
-  .retry-btn,
-  .reset-btn {
-    margin-top: 1rem;
-    padding: 0.5rem 1rem;
-    background-color: #5eaa6f;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
   }
 
   @keyframes spin {
@@ -297,81 +278,89 @@
     }
   }
 
+  .retry-btn,
+  .reset-btn {
+    padding: 0.6rem 1.2rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 1rem;
+  }
+
+  .retry-btn:hover,
+  .reset-btn:hover {
+    background-color: #0056b3;
+  }
+
   @media (max-width: 768px) {
     .page-header {
       flex-direction: column;
       align-items: flex-start;
-      gap: 0.5rem;
+      gap: 1rem;
     }
-
+    .page-header h1 {
+      font-size: 1.5rem;
+    }
     .refresh-btn {
       width: 100%;
-      justify-content: center;
+      padding: 0.7rem;
     }
-
-    .admin-page {
-      padding: 0.5rem;
-    }
-
     .customers-section {
       padding: 1rem;
     }
-
     .search-input {
       font-size: 0.9rem;
     }
-
-    .customers-table-container {
-      overflow-x: initial;
-    }
-
     .customers-table {
-      width: 100%;
-      min-width: 0;
+      min-width: 0; /* Remove min-width for stacked view */
       border: none;
     }
-
     .customers-table thead {
-      display: none;
+      display: none; /* Hide table headers on mobile */
     }
-
     .customers-table tr {
       display: block;
-      margin-bottom: 1rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      padding: 0.75rem;
+      margin-bottom: 1.2rem; /* Space between customer cards */
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 1rem;
       background-color: #f9f9f9;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     }
-
     .customers-table td {
-      display: block;
-      text-align: right;
-      font-size: 0.9rem;
-      padding: 0.5rem 0;
+      display: block; /* Stack table cells */
+      text-align: left; /* Align text to the left */
+      padding: 0.6rem 0.2rem;
       border-bottom: 1px dotted #eee;
-      white-space: normal;
+      white-space: normal; /* Allow content to wrap */
     }
-
     .customers-table td:last-child {
       border-bottom: none;
     }
-
     .customers-table td::before {
-      content: attr(data-label);
-      float: left;
+      content: attr(data-label); /* Get label from data-label attribute */
+      display: block; /* Label on its own line */
       font-weight: bold;
-      margin-right: 0.5rem;
+      margin-bottom: 0.3rem;
       color: #333;
+      font-size: 0.8rem; /* Smaller font for label */
     }
-
-    .customers-table td[data-label="Actions"] {
-      text-align: center;
-      padding-top: 0.75rem;
+    .address-cell {
+      max-width: none; /* Allow address to take full width */
+      white-space: normal; /* Allow address to wrap */
+      overflow: visible;
+      text-overflow: clip;
     }
-    .customers-table .profile-action-cell button {
-      width: auto;
-      display: inline-block;
+    .profile-action-cell {
+      text-align: left; /* Align button to the left */
+      padding-top: 0.8rem; /* Add some space above the button */
+    }
+    .profile-action-cell .action-btn {
+      width: 100%; /* Make button full width */
+      padding: 0.7rem;
+      font-size: 0.9rem;
     }
   }
 </style>

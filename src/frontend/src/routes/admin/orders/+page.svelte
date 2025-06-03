@@ -599,83 +599,128 @@
     .page-header {
       flex-direction: column;
       align-items: flex-start;
+      gap: 1rem;
     }
     .page-header h1 {
-      margin-bottom: 0.5rem;
+      margin-bottom: 0;
     }
-    .search-filter input {
+    .refresh-btn {
       width: 100%;
+      text-align: center;
     }
+
+    .orders-section .section-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .orders-section .search-filter input[type="text"] {
+      width: 100%;
+      font-size: 0.9rem;
+    }
+
     .pagination-controls {
       flex-direction: column;
       gap: 0.5rem;
-      align-items: stretch;
     }
     .pagination-controls button {
       width: 100%;
-      padding: 0.6rem;
+      padding: 0.7rem;
+      font-size: 0.9rem;
     }
+    .pagination-controls span {
+      text-align: center;
+      width: 100%;
+    }
+
     .orders-table-container {
       overflow-x: initial;
-      width: 100%;
     }
+
     .orders-table {
-      width: 100%;
       min-width: 0;
       border: none;
     }
+
     .orders-table thead {
       display: none;
     }
+
     .orders-table tr {
       display: block;
-      margin-bottom: 1rem;
-      border: 1px solid #ddd;
+      margin-bottom: 1.2rem;
+      border: 1px solid #e0e0e0;
       border-radius: 6px;
       padding: 1rem;
       background-color: #f9f9f9;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     }
+
     .orders-table td {
       display: block;
-      text-align: right;
-      font-size: 0.9rem;
+      text-align: left;
       padding: 0.6rem 0.2rem;
       border-bottom: 1px dotted #eee;
       white-space: normal;
     }
+
     .orders-table td:last-child {
       border-bottom: none;
     }
+
     .orders-table td::before {
       content: attr(data-label);
-      float: left;
+      display: block;
       font-weight: bold;
-      margin-right: 0.5rem;
+      margin-bottom: 0.3rem;
       color: #333;
-      white-space: nowrap;
+      font-size: 0.8rem;
     }
-    .orders-table .order-items {
+
+    .orders-table td[data-label="Items"] .order-items {
+      padding-left: 0;
+    }
+    .orders-table td[data-label="Items"] .order-item {
       font-size: 0.85rem;
-      max-width: none;
+      margin-bottom: 0.2rem;
     }
-    .orders-table .order-items .order-item {
-    }
-    .orders-table .status-select {
-      width: 100%;
-      margin-top: 0.25rem;
-    }
-    .orders-table .actions-cell {
-      text-align: center;
-      padding-top: 0.75rem;
-    }
-    .orders-table .actions-cell .action-btn {
-      width: auto;
-      display: inline-block;
-      padding: 0.5rem 1rem;
-    }
+
     .orders-table td[data-label="Customer / Phone"] small {
       display: block;
-      margin-top: 0.2rem;
+      font-size: 0.85rem;
+      color: #555;
+    }
+
+    .orders-table td[data-label="Status"] .status-select {
+      width: 100%;
+      padding: 0.6rem;
+      font-size: 0.9rem;
+    }
+
+    .orders-table td[data-label="Status"] .status-indicator {
+      font-size: 0.75rem;
+      display: block;
+      margin-top: 0.25rem;
+    }
+
+    .orders-table td[data-label="Address"].address-cell {
+      max-width: none;
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+    }
+
+    .orders-table td[data-label="Details"].actions-cell {
+      padding-top: 0.8rem;
+      text-align: left;
+    }
+
+    .orders-table td[data-label="Details"].actions-cell .action-btn {
+      width: 100%;
+      padding: 0.7rem;
+      font-size: 0.9rem;
+      box-sizing: border-box;
     }
   }
 
@@ -733,5 +778,16 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .status-select:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  .status-update-error {
+    color: var(--color-danger, #dc3545);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
   }
 </style>
