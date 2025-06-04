@@ -38,7 +38,7 @@
 
         <div class="footer-section">
           <h3>Contact Us</h3>
-          <p>Phone: 07089345065</p>
+          <p>Phone: 9399377528</p>
           <p>Email: info@Kanhaiyadairy.com</p>
           <p>Address: Suhagi, Behind TI Bunglow, Jabalpur</p>
         </div>
