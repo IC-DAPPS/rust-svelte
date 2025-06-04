@@ -39,8 +39,8 @@
         <div class="footer-section">
           <h3>Contact Us</h3>
           <p>Phone: 9399377528</p>
-          <p>Email: info@Kanhaiyadairy.com</p>
-          <p>Address: front of hanuman mandir, Suhagi, Jabalpur</p>
+          <p>Email: patel07dhrm@gmail.com</p>
+          <p>Address: In front of hanuman mandir, Suhagi, Jabalpur</p>
         </div>
       </div>
 

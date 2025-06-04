@@ -124,7 +124,7 @@
               class="profile-image"
             />
           </div>
-          <h3>{$isEnglish ? "Patel Sir" : "पटेल सर"}</h3>
+          <h3>{$isEnglish ? "Satyendra Patel" : "सत्येन्द्र पटेल"}</h3>
           <p class="member-title">
             {$isEnglish ? "Founder & CEO" : "संस्थापक और सीईओ"}
           </p>
@@ -168,7 +168,7 @@
               {$isEnglish ? "Photo" : "तस्वीर"}
             </div>
           </div>
-          <h3>{$isEnglish ? "Sunita Patel" : "सुनीता पटेल"}</h3>
+          <h3>{$isEnglish ? "Patel sir" : "पटेल सर"}</h3>
           <p class="member-title">
             {$isEnglish ? "Delivery Coordinator" : "वितरण समन्वयक"}
           </p>
@@ -246,27 +246,43 @@
         <div class="contact-info">
           <h3>{$isEnglish ? "Visit Our Shop" : "हमारी दुकान पर जाएँ"}</h3>
           <p>{$isEnglish ? "Kanhaiya Dairy Shop" : "कन्हैया डेयरी की दुकान"}</p>
-          <p>{$isEnglish ? "Behind TI Bunglow" : "टी.आई. बंगले के पीछे"}</p>
+          <p>
+            {$isEnglish
+              ? "in front of hanuman mandir"
+              : "हनुमान मंदिर के सामने"}
+          </p>
           <p>{$isEnglish ? "Suhagi, Jabalpur" : "सुहागी, जबलपुर"}</p>
-          <p>{$isEnglish ? "Madhya Pradesh, 482001" : "मध्य प्रदेश, ४८२००१"}</p>
+          <p>{$isEnglish ? "Madhya Pradesh, 482004" : "मध्य प्रदेश, ४८२००४"}</p>
           <p class="contact-phone">
-            {$isEnglish ? "Phone: 07089345065" : "फ़ोन: ०७०८९३४५०६५"}
+            {$isEnglish
+              ? "Phone: 9399377528, 7999010007"
+              : "फ़ोन: ९३९९३७७५२८, ७९९९०१०००७"}
           </p>
           <p>
             {$isEnglish
-              ? "Email: info@Kanhaiyadairy.com"
-              : "ईमेल: info@Kanhaiyadairy.com"}
+              ? "Email: patel07dhrm@gmail.com"
+              : "ईमेल: patel07dhrm@gmail.com"}
           </p>
           <p>
             {$isEnglish
-              ? "Hours: 6:00 AM - 8:00 PM (Daily)"
-              : "समय: सुबह ६:०० - रात ८:०० (प्रतिदिन)"}
+              ? "Hours: Open twice daily - Morning: 8:00 AM to 12:00 PM, Evening: 4:00 PM to 10:00 PM"
+              : "समय: दिन में दो बार खुला - सुबह: ८:०० से १२:००, शाम: ४:०० से १०:००"}
           </p>
         </div>
         <div class="contact-map">
-          <div class="placeholder-map">
-            {$isEnglish ? "Map Location" : "मानचित्र स्थान"}
-          </div>
+          <iframe
+            class="google-map-iframe"
+            src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d3666.6974727460524!2d79.9548417753197!3d23.217693279037526!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMjPCsDEzJzAzLjciTiA3OcKwNTcnMjYuNyJF!5e0!3m2!1sen!2sin!4v1749058641644!5m2!1sen!2sin"
+            width="100%"
+            style="border:0;"
+            allowfullscreen={true}
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            title={$isEnglish
+              ? "Kanhaiya Dairy Location Map"
+              : "कन्हैया डेयरी मानचित्र"}
+          >
+          </iframe>
         </div>
       </div>
     </section>
@@ -503,6 +519,11 @@
     border-radius: 8px;
   }
 
+  .google-map-iframe {
+    height: 400px;
+    border-radius: 8px;
+  }
+
   @media (max-width: 992px) {
     .about-section {
       flex-direction: column;
@@ -525,6 +546,10 @@
 
     .placeholder-image,
     .placeholder-map {
+      height: 250px;
+    }
+
+    .google-map-iframe {
       height: 250px;
     }
   }

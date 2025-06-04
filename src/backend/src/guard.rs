@@ -1,9 +1,11 @@
 use candid::Principal;
 use std::{cell::RefCell, collections::BTreeSet};
 
-const INITIAL_AUTHORIZED_PRINCIPALS: [&str; 2] = [
+const INITIAL_AUTHORIZED_PRINCIPALS: [&str; 4] = [
     "3x4lf-ejzal-hbmpw-3nbss-3eewi-bhvbf-wtvor-d5ogi-hop22-w7o5t-lqe",
     "upfji-4rkdd-uh3e4-uiavy-wkdcq-rcakh-creh5-crsgi-hq5az-7nfqd-wqe",
+    "xfkgy-mhvgt-4fs2p-zal4s-ifdu4-fledw-gdyod-dp4r2-gypjl-gh4vp-yae",
+    "5g24m-kxyrd-yb7wl-up5k6-4egww-miul7-gajat-e2d7i-mdpc7-6dduf-eae",
 ];
 
 thread_local! {
