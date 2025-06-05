@@ -3,21 +3,8 @@
   import { page } from "$app/stores";
   import { isEnglish } from "$lib/stores/languageStore";
   import { userStore } from "$lib/stores/userStore";
-  import { onMount } from "svelte";
 
   let mobileMenuOpen = false;
-  let itemCount = 0;
-
-  onMount(() => {
-    // Subscribe to cartStore updates
-    const unsubscribe = cartItemCount.subscribe((count) => {
-      itemCount = count;
-    });
-
-    return () => {
-      unsubscribe(); // Clean up subscription on component destroy
-    };
-  });
 
   function toggleMobileMenu() {
     mobileMenuOpen = !mobileMenuOpen;
@@ -40,19 +27,6 @@
           />
           <span class="logo-text">Kanhaiya Dairy</span>
         </a>
-
-        <button
-          class="mobile-menu-toggle"
-          on:click={toggleMobileMenu}
-          aria-expanded={mobileMenuOpen}
-        >
-          <span class="sr-only">Menu</span>
-          <div class="hamburger" class:open={mobileMenuOpen}>
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-        </button>
 
         <div class="menu-container" class:open={mobileMenuOpen}>
           <ul class="nav-menu">
@@ -116,6 +90,30 @@
             </a>
           </div>
         </div>
+
+        <a
+          href="/cart"
+          class="mobile-header-cart-link"
+          on:click={() => (mobileMenuOpen = false)}
+        >
+          <span class="cart-icon">🛒</span>
+          {#if $cartItemCount > 0}
+            <span class="cart-count">{$cartItemCount}</span>
+          {/if}
+        </a>
+
+        <button
+          class="mobile-menu-toggle"
+          on:click={toggleMobileMenu}
+          aria-expanded={mobileMenuOpen}
+        >
+          <span class="sr-only">Menu</span>
+          <div class="hamburger" class:open={mobileMenuOpen}>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </button>
       </div>
     </div>
   </nav>
@@ -264,6 +262,15 @@
     font-size: 1.5rem;
   }
 
+  .mobile-header-cart-link {
+    display: none;
+    align-items: center;
+    text-decoration: none;
+    color: #333;
+    position: relative;
+    margin-right: 1rem;
+  }
+
   .mobile-menu-toggle {
     display: none;
     background: none;
@@ -315,6 +322,10 @@
     .mobile-menu-toggle {
       display: block;
       z-index: 101;
+    }
+
+    .mobile-header-cart-link {
+      display: flex;
     }
 
     .menu-container {
