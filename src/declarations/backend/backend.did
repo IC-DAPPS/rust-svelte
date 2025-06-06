@@ -4,6 +4,11 @@ type AddProductPayload = record {
   description : text;
   price : float64;
 };
+type AllCanisterCyclesResponse = record {
+  frontend : CanisterCycles;
+  backend : CanisterCycles;
+};
+type CanisterCycles = record { id : principal; name : text; cycles : nat };
 type GetUserDataError = variant {
   FailedToAddToList;
   DidntFindUserData;
@@ -52,14 +57,15 @@ type Product = record {
 };
 type Result = variant { Ok : nat64; Err : text };
 type Result_1 = variant { Ok : Order; Err : OrderError };
+type Result_10 = variant { Ok; Err : GetUserDataError };
 type Result_2 = variant { Ok : nat64; Err : OrderError };
 type Result_3 = variant { Ok; Err : text };
 type Result_4 = variant { Ok : UserProfile; Err : text };
-type Result_5 = variant { Ok : vec Order; Err : OrderError };
-type Result_6 = variant { Ok : UserProfile; Err : GetUserDataError };
-type Result_7 = variant { Ok : text; Err : text };
-type Result_8 = variant { Ok : Product; Err : text };
-type Result_9 = variant { Ok; Err : GetUserDataError };
+type Result_5 = variant { Ok : AllCanisterCyclesResponse; Err : text };
+type Result_6 = variant { Ok : vec Order; Err : OrderError };
+type Result_7 = variant { Ok : UserProfile; Err : GetUserDataError };
+type Result_8 = variant { Ok : text; Err : text };
+type Result_9 = variant { Ok : Product; Err : text };
 type UserProfile = record {
   name : text;
   order_ids : vec nat64;
@@ -72,16 +78,17 @@ service : {
   create_order : (text, vec OrderItemInput, text) -> (Result_2);
   create_profile : (UserProfile) -> (Result_3);
   delete_profile_admin : (text) -> (Result_4);
+  get_all_canister_cycles : () -> (Result_5);
   get_all_customers : () -> (vec UserProfile) query;
-  get_all_orders : () -> (Result_5) query;
-  get_my_orders : (text) -> (Result_5) query;
+  get_all_orders : () -> (Result_6) query;
+  get_my_orders : (text) -> (Result_6) query;
   get_order_details : (nat64, text) -> (Result_1) query;
   get_order_details_admin : (nat64) -> (Result_1) query;
   get_products : () -> (vec Product) query;
-  get_profile_by_phone : (text) -> (Result_6) query;
-  initialize_products : () -> (Result_7);
+  get_profile_by_phone : (text) -> (Result_7) query;
+  initialize_products : () -> (Result_8);
   is_dev_check : () -> (bool) query;
   update_order_status_admin : (nat64, OrderStatus) -> (Result_1);
-  update_product_admin : (nat64, AddProductPayload) -> (Result_8);
-  update_profile : (UserProfile) -> (Result_9);
+  update_product_admin : (nat64, AddProductPayload) -> (Result_9);
+  update_profile : (UserProfile) -> (Result_10);
 }

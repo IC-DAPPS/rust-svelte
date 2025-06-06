@@ -53,7 +53,20 @@ export const idlFactory = ({ IDL }) => {
   });
   const Result_3 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : IDL.Text });
   const Result_4 = IDL.Variant({ 'Ok' : UserProfile, 'Err' : IDL.Text });
-  const Result_5 = IDL.Variant({ 'Ok' : IDL.Vec(Order), 'Err' : OrderError });
+  const CanisterCycles = IDL.Record({
+    'id' : IDL.Principal,
+    'name' : IDL.Text,
+    'cycles' : IDL.Nat,
+  });
+  const AllCanisterCyclesResponse = IDL.Record({
+    'frontend' : CanisterCycles,
+    'backend' : CanisterCycles,
+  });
+  const Result_5 = IDL.Variant({
+    'Ok' : AllCanisterCyclesResponse,
+    'Err' : IDL.Text,
+  });
+  const Result_6 = IDL.Variant({ 'Ok' : IDL.Vec(Order), 'Err' : OrderError });
   const Product = IDL.Record({
     'id' : IDL.Nat64,
     'name' : IDL.Text,
@@ -66,13 +79,13 @@ export const idlFactory = ({ IDL }) => {
     'DidntFindUserData' : IDL.Null,
     'AnonymousCaller' : IDL.Null,
   });
-  const Result_6 = IDL.Variant({
+  const Result_7 = IDL.Variant({
     'Ok' : UserProfile,
     'Err' : GetUserDataError,
   });
-  const Result_7 = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
-  const Result_8 = IDL.Variant({ 'Ok' : Product, 'Err' : IDL.Text });
-  const Result_9 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : GetUserDataError });
+  const Result_8 = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : IDL.Text });
+  const Result_9 = IDL.Variant({ 'Ok' : Product, 'Err' : IDL.Text });
+  const Result_10 = IDL.Variant({ 'Ok' : IDL.Null, 'Err' : GetUserDataError });
   return IDL.Service({
     'add_product_admin' : IDL.Func([AddProductPayload], [Result], []),
     'cancel_my_order' : IDL.Func([IDL.Nat64, IDL.Text], [Result_1], []),
@@ -83,9 +96,10 @@ export const idlFactory = ({ IDL }) => {
       ),
     'create_profile' : IDL.Func([UserProfile], [Result_3], []),
     'delete_profile_admin' : IDL.Func([IDL.Text], [Result_4], []),
+    'get_all_canister_cycles' : IDL.Func([], [Result_5], []),
     'get_all_customers' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
-    'get_all_orders' : IDL.Func([], [Result_5], ['query']),
-    'get_my_orders' : IDL.Func([IDL.Text], [Result_5], ['query']),
+    'get_all_orders' : IDL.Func([], [Result_6], ['query']),
+    'get_my_orders' : IDL.Func([IDL.Text], [Result_6], ['query']),
     'get_order_details' : IDL.Func(
         [IDL.Nat64, IDL.Text],
         [Result_1],
@@ -93,8 +107,8 @@ export const idlFactory = ({ IDL }) => {
       ),
     'get_order_details_admin' : IDL.Func([IDL.Nat64], [Result_1], ['query']),
     'get_products' : IDL.Func([], [IDL.Vec(Product)], ['query']),
-    'get_profile_by_phone' : IDL.Func([IDL.Text], [Result_6], ['query']),
-    'initialize_products' : IDL.Func([], [Result_7], []),
+    'get_profile_by_phone' : IDL.Func([IDL.Text], [Result_7], ['query']),
+    'initialize_products' : IDL.Func([], [Result_8], []),
     'is_dev_check' : IDL.Func([], [IDL.Bool], ['query']),
     'update_order_status_admin' : IDL.Func(
         [IDL.Nat64, OrderStatus],
@@ -103,10 +117,10 @@ export const idlFactory = ({ IDL }) => {
       ),
     'update_product_admin' : IDL.Func(
         [IDL.Nat64, AddProductPayload],
-        [Result_8],
+        [Result_9],
         [],
       ),
-    'update_profile' : IDL.Func([UserProfile], [Result_9], []),
+    'update_profile' : IDL.Func([UserProfile], [Result_10], []),
   });
 };
 export const init = ({ IDL }) => { return []; };

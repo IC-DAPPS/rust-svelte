@@ -165,6 +165,34 @@ export async function getAllOrders(): Promise<FrontendOrder[]> {
   }
 }
 
+// Hosting Balance / Cycle Status
+export async function getHostingBalance() {
+  try {
+    const currentAuth = get(authStore);
+    if (!currentAuth.isAuthenticated || !currentAuth.identity) {
+      throw new Error("Admin authentication required to fetch hosting balance.");
+    }
+
+    const actor = await getAuthenticatedActor(currentAuth.identity);
+    const result = await actor.get_all_canister_cycles();
+
+    if ("Ok" in result) {
+      return result.Ok;
+    } else {
+      throw new Error(result.Err || "Failed to fetch hosting balance due to an unknown error.");
+    }
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred while fetching hosting balance.";
+    showToast({
+      text: errorMessage,
+      level: "error",
+    });
+    // Re-throw the error so the calling component can handle its own state
+    throw new Error(errorMessage);
+  }
+}
+
 // User Profile
 export async function getProfileByPhone(phoneNumber: string): Promise<UserProfile | null> {
   try {

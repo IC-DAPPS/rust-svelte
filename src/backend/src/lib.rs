@@ -9,9 +9,12 @@ mod store;
 mod tests;
 
 use crate::{guard::*, models::*};
-use candid::{CandidType, Deserialize};
+use candid::{CandidType, Deserialize, Principal};
 use errors::{GetUserDataError, OrderError};
-use ic_cdk::{api::time, query, update};
+use ic_cdk::api::management_canister::main::{
+    canister_status, CanisterIdRecord, CanisterStatusResponse,
+};
+use ic_cdk::{api::time, call, id, query, update};
 
 ///////////////////////////////////////////////////////////
 // USER FUNCTIONS
@@ -413,6 +416,71 @@ fn post_upgrade() {
     // after an upgrade (e.g., to repopulate runtime caches from stable storage), call it here.
     // For example, if you had a function like store::reinit_state_after_upgrade():
     // store::reinit_state_after_upgrade();
+}
+
+// CYCLE MANAGEMENT & FINANCIAL STATUS FUNCTIONS
+
+#[derive(CandidType, Deserialize, Debug)]
+pub struct CanisterCycles {
+    id: Principal,
+    name: String,
+    cycles: u128,
+}
+
+#[derive(CandidType, Deserialize, Debug)]
+pub struct AllCanisterCyclesResponse {
+    backend: CanisterCycles,
+    frontend: CanisterCycles,
+}
+
+#[update(guard = "is_dev")]
+async fn get_all_canister_cycles() -> Result<AllCanisterCyclesResponse, String> {
+    let backend_id = id();
+    let frontend_id_str = "mklha-yyaaa-aaaak-apcxq-cai"; // Mainnet Frontend Canister ID
+    let frontend_id =
+        Principal::from_text(frontend_id_str).expect("Failed to parse frontend principal");
+
+    let canisters_to_check = vec![(backend_id, "Backend"), (frontend_id, "Frontend")];
+
+    let mut results: Vec<CanisterCycles> = Vec::new();
+
+    for (canister_id, name) in canisters_to_check {
+        let status_args = CanisterIdRecord { canister_id };
+
+        match canister_status(status_args).await {
+            Ok((canister_status_response,)) => {
+                let cycles_balance: u128 = canister_status_response
+                    .cycles
+                    .0
+                    .try_into()
+                    .map_err(|_| format!("Cycles balance too large for u128 for {}", name))?;
+                results.push(CanisterCycles {
+                    id: canister_id,
+                    name: name.to_string(),
+                    cycles: cycles_balance,
+                });
+            }
+            Err((rejection_code, msg)) => {
+                let error_msg = format!(
+                    "Failed to get status for {} ({}): code={:?}, message={}",
+                    name, canister_id, rejection_code, msg
+                );
+                return Err(error_msg);
+            }
+        }
+    }
+
+    if results.len() == 2 {
+        let backend_cycles = results.remove(0);
+        let frontend_cycles = results.remove(0);
+
+        Ok(AllCanisterCyclesResponse {
+            backend: backend_cycles,
+            frontend: frontend_cycles,
+        })
+    } else {
+        Err("Could not fetch status for all required canisters.".to_string())
+    }
 }
 
 #[test]

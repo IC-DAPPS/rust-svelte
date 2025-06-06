@@ -156,6 +156,16 @@
           ></iconify-icon>
           <span>👥 Customers</span>
         </a>
+        <a
+          href="/admin/hosting-balance"
+          class="nav-item"
+          class:active={currentPath.startsWith("/admin/hosting-balance")}
+          on:click={closeMenuAfterNavigation}
+        >
+          <iconify-icon icon="mdi:wallet-bifold" class="nav-icon"
+          ></iconify-icon>
+          <span>₹ Hosting Balance</span>
+        </a>
       </nav>
       <div class="admin-footer">
         <button class="logout-btn" on:click={handleIiLogout}>

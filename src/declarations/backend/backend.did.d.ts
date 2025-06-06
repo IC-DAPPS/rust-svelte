@@ -8,6 +8,15 @@ export interface AddProductPayload {
   'description' : string,
   'price' : number,
 }
+export interface AllCanisterCyclesResponse {
+  'frontend' : CanisterCycles,
+  'backend' : CanisterCycles,
+}
+export interface CanisterCycles {
+  'id' : Principal,
+  'name' : string,
+  'cycles' : bigint,
+}
 export type GetUserDataError = { 'FailedToAddToList' : null } |
   { 'DidntFindUserData' : null } |
   { 'AnonymousCaller' : null };
@@ -52,22 +61,24 @@ export type Result = { 'Ok' : bigint } |
   { 'Err' : string };
 export type Result_1 = { 'Ok' : Order } |
   { 'Err' : OrderError };
+export type Result_10 = { 'Ok' : null } |
+  { 'Err' : GetUserDataError };
 export type Result_2 = { 'Ok' : bigint } |
   { 'Err' : OrderError };
 export type Result_3 = { 'Ok' : null } |
   { 'Err' : string };
 export type Result_4 = { 'Ok' : UserProfile } |
   { 'Err' : string };
-export type Result_5 = { 'Ok' : Array<Order> } |
+export type Result_5 = { 'Ok' : AllCanisterCyclesResponse } |
+  { 'Err' : string };
+export type Result_6 = { 'Ok' : Array<Order> } |
   { 'Err' : OrderError };
-export type Result_6 = { 'Ok' : UserProfile } |
+export type Result_7 = { 'Ok' : UserProfile } |
   { 'Err' : GetUserDataError };
-export type Result_7 = { 'Ok' : string } |
+export type Result_8 = { 'Ok' : string } |
   { 'Err' : string };
-export type Result_8 = { 'Ok' : Product } |
+export type Result_9 = { 'Ok' : Product } |
   { 'Err' : string };
-export type Result_9 = { 'Ok' : null } |
-  { 'Err' : GetUserDataError };
 export interface UserProfile {
   'name' : string,
   'order_ids' : BigUint64Array | bigint[],
@@ -83,18 +94,19 @@ export interface _SERVICE {
   >,
   'create_profile' : ActorMethod<[UserProfile], Result_3>,
   'delete_profile_admin' : ActorMethod<[string], Result_4>,
+  'get_all_canister_cycles' : ActorMethod<[], Result_5>,
   'get_all_customers' : ActorMethod<[], Array<UserProfile>>,
-  'get_all_orders' : ActorMethod<[], Result_5>,
-  'get_my_orders' : ActorMethod<[string], Result_5>,
+  'get_all_orders' : ActorMethod<[], Result_6>,
+  'get_my_orders' : ActorMethod<[string], Result_6>,
   'get_order_details' : ActorMethod<[bigint, string], Result_1>,
   'get_order_details_admin' : ActorMethod<[bigint], Result_1>,
   'get_products' : ActorMethod<[], Array<Product>>,
-  'get_profile_by_phone' : ActorMethod<[string], Result_6>,
-  'initialize_products' : ActorMethod<[], Result_7>,
+  'get_profile_by_phone' : ActorMethod<[string], Result_7>,
+  'initialize_products' : ActorMethod<[], Result_8>,
   'is_dev_check' : ActorMethod<[], boolean>,
   'update_order_status_admin' : ActorMethod<[bigint, OrderStatus], Result_1>,
-  'update_product_admin' : ActorMethod<[bigint, AddProductPayload], Result_8>,
-  'update_profile' : ActorMethod<[UserProfile], Result_9>,
+  'update_product_admin' : ActorMethod<[bigint, AddProductPayload], Result_9>,
+  'update_profile' : ActorMethod<[UserProfile], Result_10>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];
